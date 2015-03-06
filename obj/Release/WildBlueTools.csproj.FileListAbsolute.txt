@@ -1,0 +1,10 @@
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\WildBlueTools.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\WildBlueTools.pdb
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\Assembly-CSharp.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\UnityEngine.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\Mono.Cecil.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\Assembly-CSharp-firstpass.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\TDx.TDxInput.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Release\Mono.Security.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Release\WildBlueTools.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Release\WildBlueTools.pdb
