@@ -18,6 +18,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public delegate void OnOverheat();
+    public delegate void OnCooldown();
+
     public class WBIHeater : ExtendedPartModule
     {
         const float kMinimumHeatShedFactor= 0.001f;
@@ -34,6 +37,27 @@ namespace WildBlueIndustries
         public bool heaterIsOn = false;
         public float totalHeatToShed = 0f;
         public bool isOverheated = false;
+
+        public OnOverheat onOverheatDelegate;
+        public OnCooldown onCooldownDelegate;
+
+        public virtual void Activate()
+        {
+            if (isOverheated)
+            {
+                ScreenMessages.PostScreenMessage("System needs to cool off before restart.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                return;
+            }
+
+            Events["ToggleHeater"].guiName = "Heat Off";
+            heaterIsOn = true;
+        }
+
+        public virtual void Shutdown()
+        {
+            heaterIsOn = false;
+            Events["ToggleHeater"].guiName = "Heat On";
+        }
 
         [KSPAction("Toggle Heater")]
         public void ToggleHeaterAction(KSPActionParam param)
@@ -119,6 +143,8 @@ namespace WildBlueIndustries
             totalHeatToShed = totalHeatToShed * Time.fixedDeltaTime;
             if (radiators.Count > 0)
                 heatToDistribute = totalHeatToShed / (float)radiators.Count;
+            else
+                heatToDistribute = totalHeatToShed;
             
             //If we have heat in the heat sink, make sure to distribute the minimum level of heat
             if (heatSink.amount > 0f && heatToDistribute < heaterShedRate)
@@ -184,16 +210,23 @@ namespace WildBlueIndustries
 
         public virtual void HeaterHasCooled()
         {
+            if (onCooldownDelegate != null)
+                onCooldownDelegate();
         }
 
         public virtual void OverheatWarning()
         {
             ScreenMessages.PostScreenMessage("WARNING! Heat is beyond capacity!", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+
+            if (onOverheatDelegate != null)
+                onOverheatDelegate();
         }
 
         public virtual void FindRadiators()
         {
             List<WBIRadiator> partRadiators;
+            if (this.part.vessel == null)
+                return;
             if (this.part.vessel.parts.Count == vesselPartCount)
                 return;
 
@@ -210,6 +243,13 @@ namespace WildBlueIndustries
                 foreach (WBIRadiator radiator in partRadiators)
                     radiators.Add(radiator);
             }
+        }
+
+        public virtual void ShowGui(bool isGuiVisible)
+        {
+            Events["ToggleHeater"].guiActive = isGuiVisible;
+            Events["ToggleHeater"].guiActiveEditor = isGuiVisible;
+            Actions["ToggleHeaterAction"].active = isGuiVisible;
         }
 
     }

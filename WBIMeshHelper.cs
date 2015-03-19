@@ -28,28 +28,45 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public int selectedObject = 0;
 
+        [KSPField(isPersistant = true)]
+        public string guiNames;
+
         protected List<List<Transform>> objectTransforms = new List<List<Transform>>();
         protected Dictionary<string, int> meshIndexes = new Dictionary<string, int>();
+        protected List<string> objectNames = new List<string>();
         protected bool showGui = false;
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Next variant", active = true)]
-        public void NextMesh()
+        public virtual void NextMesh()
         {
             int nextIndex = selectedObject;
 
             nextIndex = (nextIndex + 1) % this.objectTransforms.Count;
 
             setObject(nextIndex);
+
+            if (objectNames.Count > 0)
+            {
+                nextIndex = (nextIndex + 1) % this.objectTransforms.Count;
+                Events["NextMesh"].guiName = objectNames[nextIndex];
+            }
+
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Prev variant", active = true)]
-        public void PrevMesh()
+        public virtual void PrevMesh()
         {
             int nextIndex = selectedObject;
 
             nextIndex = (nextIndex - 1) % this.objectTransforms.Count;
 
             setObject(nextIndex);
+
+            if (objectNames.Count > 0)
+            {
+                nextIndex = (nextIndex - 1) % this.objectTransforms.Count;
+                Events["NextMesh"].guiName = objectNames[nextIndex];
+            }
         }
 
         public override void OnLoad(ConfigNode node)
@@ -86,6 +103,8 @@ namespace WildBlueIndustries
             value = protoNode.GetValue("showGui");
             if (string.IsNullOrEmpty(value) == false)
                 showGui = bool.Parse(value);
+
+            guiNames = protoNode.GetValue("guiNames");
         }
 
         public override void OnStart(StartState state)
@@ -93,7 +112,7 @@ namespace WildBlueIndustries
             parseObjectNames();
             setObject(selectedObject);
             base.OnStart(state);
-            string[] meshes;
+            string[] elements;
 
             this.part.OnEditorAttach += OnEditorAttach;
 
@@ -105,9 +124,16 @@ namespace WildBlueIndustries
             Events["PrevMesh"].guiActiveEditor = showGui;
 
             //Go through each entry and split up the entry into its template name and mesh index
-            meshes = objects.Split(';');
-            for (int index = 0; index < meshes.Count<string>(); index++)
-                meshIndexes.Add(meshes[index], index);
+            elements = objects.Split(';');
+            for (int index = 0; index < elements.Count<string>(); index++)
+                meshIndexes.Add(elements[index], index);
+
+            if (guiNames != null)
+            {
+                elements = guiNames.Split(';');
+                foreach (string element in elements)
+                    objectNames.Add(element);
+            }
         }
 
         protected void parseObjectNames()
@@ -181,6 +207,19 @@ namespace WildBlueIndustries
 
             foreach (int objectId in objects)
                 setObject(objectId, false);
+        }
+
+        protected void showAll()
+        {
+            setObject(-1);
+
+            for (int objectIndex = 0; objectIndex < objectTransforms.Count; objectIndex++)
+                setObject(objectIndex, false);
+        }
+
+        protected void hideAll()
+        {
+            setObject(-1);
         }
 
     }
