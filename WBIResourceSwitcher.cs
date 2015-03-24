@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyrighgt 2014, by Michael Billard (Angel-125)
+Source code copyright 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -65,11 +65,13 @@ namespace WildBlueIndustries
         protected string techRequiredToReconfigure;
         protected string capacityFactorTypes;
         protected int kasAmount;
+        protected bool confirmResourceSwitch = false;
         protected bool deflateConfirmed = false;
         protected TemplatesModel templatesModel;
         protected Dictionary<string, ConfigNode> parameterOverrides = new Dictionary<string, ConfigNode>();
         protected Dictionary<string, double> resourceMaxAmounts = new Dictionary<string, double>();
         private List<PartResource> _templateResources = new List<PartResource>();
+        private bool _switchClickedOnce = false;
 
         #region Display Fields
         //We use this field to identify the template config node as well as have a GUI friendly name for the user.
@@ -82,6 +84,18 @@ namespace WildBlueIndustries
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "Next Type", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
         public void NextType()
         {
+            if (confirmResourceSwitch && HighLogic.LoadedSceneIsFlight)
+            {
+                if (_switchClickedOnce == false)
+                {
+                    ScreenMessages.PostScreenMessage("Existing resources will be removed. Click a second time to confirm switch.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    _switchClickedOnce = true;
+                    return;
+                }
+
+                _switchClickedOnce = false;
+            }
+
             int templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
 
             if (templateIndex != -1)
@@ -98,6 +112,18 @@ namespace WildBlueIndustries
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "Prev Type", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
         public void PrevType()
         {
+            if (confirmResourceSwitch && HighLogic.LoadedSceneIsFlight)
+            {
+                if (_switchClickedOnce == false)
+                {
+                    ScreenMessages.PostScreenMessage("Existing resources will be removed. Click a second time to confirm switch.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    _switchClickedOnce = true;
+                    return;
+                }
+
+                _switchClickedOnce = false;
+            }
+
             int templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
 
             if (templateIndex != -1)
@@ -770,6 +796,10 @@ namespace WildBlueIndustries
 
             //Location to the decals
             _decalBasePath = protoNode.GetValue("decalBasePath");
+
+            value = protoNode.GetValue("confirmResourceSwitch");
+            if (string.IsNullOrEmpty(value) == false)
+                confirmResourceSwitch = bool.Parse(value);
 
             //Build dictionary of decal names & overrides
             overrideNodes = protoNode.GetNodes("OVERRIDE");

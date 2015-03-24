@@ -8,3 +8,4 @@ C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\Mono.Cecil.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\Mono.Security.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.pdb
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.csprojResolveAssemblyReference.cache

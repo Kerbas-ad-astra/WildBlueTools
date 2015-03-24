@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyrighgt 2014, by Michael Billard (Angel-125)
+Source code copyright 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -39,7 +39,6 @@ namespace WildBlueIndustries
 
         float constEmissArea;
         float shcCoolantMass;
-        FixedUpdateHelper fixedUpdateHelper;
 
         public override void OnLoad(ConfigNode node)
         {
@@ -56,7 +55,6 @@ namespace WildBlueIndustries
             base.OnStart(state);
 
             Fields["sunAOA"].guiActive = false;
-            Fields["status"].guiActive = false;
             Fields["flowRate"].guiActive = false;
 
             if (panelState == panelStates.EXTENDED)
@@ -66,32 +64,18 @@ namespace WildBlueIndustries
 
             //Coolant mass is in metric tons, convert it to kilograms
             shcCoolantMass = heatCapacity * (coolantMass * 1000f);
-
-            //Start the fixed update helper
-            //Needed because ModuleDeployableSolarPanel does not make OnFixedUpdate virtual.
-            fixedUpdateHelper = this.part.gameObject.AddComponent<FixedUpdateHelper>();
-            fixedUpdateHelper.onFixedUpdateDelegate = OnUpdateFixed;
-            fixedUpdateHelper.enabled = true;
         }
 
-        public void OnUpdateFixed()
+        public virtual void ManageHeat()
         {
-            if (panelState == panelStates.BROKEN)
-                return;
-
             RadiateHeat();
-        }
-
-        public override void OnUpdate()
-        {
-            base.OnUpdate();
 
             SetRadiatorColor();
 
             if (panelState == panelStates.EXTENDED)
             {
-                Fields["currentState"].guiName = "Radiator Temp(K)";
-                currentState = String.Format("{0:#.##}", this.part.temperature);
+                Fields["currentState"].guiName = "Temperature";
+                currentState = String.Format("{0:#.##}c", this.part.temperature);
             }
             else
             {
@@ -147,7 +131,12 @@ namespace WildBlueIndustries
         {
             PartResource heatSink = this.part.Resources["SystemHeat"];
 
+            //Broken panel? no heat transfer
             if (panelState == panelStates.BROKEN)
+                return transferAmount;
+
+            //If the heat sink is full, no transfer
+            if (heatSink.amount == heatSink.maxAmount)
                 return transferAmount;
 
             //Temperature increase is based upon the specific heat capacity of the material and the mass of the material
@@ -156,6 +145,10 @@ namespace WildBlueIndustries
             float currentTemperature = this.part.temperature + Utils.CelsiusToKelvin;
             float newTemperature = currentTemperature + temperatureIncrease;
             float heatRemaining = 0;
+
+            //Safety feature: If adding the heat would exceed the radiator's temperature, then reject the transfer.
+            if (newTemperature - Utils.CelsiusToKelvin >= this.part.maxTemp)
+                return transferAmount;
 
             this.part.temperature = newTemperature - Utils.CelsiusToKelvin;
 

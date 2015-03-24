@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyrighgt 2014, by Michael Billard (Angel-125)
+Source code copyright 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -88,6 +88,7 @@ namespace WildBlueIndustries
             ConfigNode protoNode = null;
             bool foundMyPart = protoPartNodes.ContainsKey(protoNodeKey);
 
+            Log("protoNodeKey: " + protoNodeKey);
             //Try an alternate method to find the part
             if (!foundMyPart)
             {
@@ -131,15 +132,21 @@ namespace WildBlueIndustries
 
         protected string getMyPartName()
         {
-            string fileName = this.part.name;
+            //When first loaded as the game starts, this.part.name won't have extra info tacked on such as ship name or (Clone)
+            //We like this name when creating the proto node.
+            string partName = this.part.name;
+
+            //After loading, we need the pre-loaded part name, which comes from part.partInfo.
+            if (this.part.partInfo != null)
+                partName = this.part.partInfo.name;
 
             //Account for Editor
-            fileName = fileName.Replace("(Clone)", "");
+            partName = partName.Replace("(Clone)", "");
 
             //Strip out invalid characters
-            fileName = string.Join("_", fileName.Split(System.IO.Path.GetInvalidFileNameChars()));
+            partName = string.Join("_", partName.Split(System.IO.Path.GetInvalidFileNameChars()));
 
-            return fileName;
+            return partName;
         }
 
         protected void hideAllEmitters()

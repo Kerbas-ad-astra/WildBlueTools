@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyrighgt 2014, by Michael Billard (Angel-125)
+Source code copyright 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -35,6 +35,8 @@ namespace WildBlueIndustries
         protected Dictionary<string, int> meshIndexes = new Dictionary<string, int>();
         protected List<string> objectNames = new List<string>();
         protected bool showGui = false;
+        protected bool showPrev = true;
+        protected bool editorOnly = false;
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Next variant", active = true)]
         public virtual void NextMesh()
@@ -87,9 +89,9 @@ namespace WildBlueIndustries
             Events["NextMesh"].active = showGui;
             Events["NextMesh"].guiActive = showGui;
             Events["NextMesh"].guiActiveEditor = showGui;
-            Events["PrevMesh"].active = showGui;
-            Events["PrevMesh"].guiActive = showGui;
-            Events["PrevMesh"].guiActiveEditor = showGui;
+            Events["PrevMesh"].active = showGui && showPrev;
+            Events["PrevMesh"].guiActive = showGui && showPrev;
+            Events["PrevMesh"].guiActiveEditor = showGui && showPrev;
         }
 
         protected override void getProtoNodeValues(ConfigNode protoNode)
@@ -104,6 +106,14 @@ namespace WildBlueIndustries
             if (string.IsNullOrEmpty(value) == false)
                 showGui = bool.Parse(value);
 
+            value = protoNode.GetValue("showPrev");
+            if (string.IsNullOrEmpty(value) == false)
+                showPrev = bool.Parse(value);
+
+            value = protoNode.GetValue("editorOnly");
+            if (string.IsNullOrEmpty(value) == false)
+                editorOnly = bool.Parse(value);
+
             guiNames = protoNode.GetValue("guiNames");
         }
 
@@ -112,33 +122,35 @@ namespace WildBlueIndustries
             parseObjectNames();
             setObject(selectedObject);
             base.OnStart(state);
-            string[] elements;
 
             this.part.OnEditorAttach += OnEditorAttach;
+
+            if (editorOnly && HighLogic.LoadedSceneIsEditor == false)
+                showGui = false;
 
             Events["NextMesh"].active = showGui;
             Events["NextMesh"].guiActive = showGui;
             Events["NextMesh"].guiActiveEditor = showGui;
-            Events["PrevMesh"].active = showGui;
-            Events["PrevMesh"].guiActive = showGui;
-            Events["PrevMesh"].guiActiveEditor = showGui;
 
-            //Go through each entry and split up the entry into its template name and mesh index
-            elements = objects.Split(';');
-            for (int index = 0; index < elements.Count<string>(); index++)
-                meshIndexes.Add(elements[index], index);
+            Events["PrevMesh"].active = showGui && showPrev;
+            Events["PrevMesh"].guiActive = showGui && showPrev;
+            Events["PrevMesh"].guiActiveEditor = showGui && showPrev;
 
-            if (guiNames != null)
+            if (objectNames.Count > 0)
             {
-                elements = guiNames.Split(';');
-                foreach (string element in elements)
-                    objectNames.Add(element);
+                int nextIndex = (selectedObject + 1) % this.objectNames.Count;
+                if (nextIndex == objectNames.Count)
+                    nextIndex = 0;
+                if (string.IsNullOrEmpty(objectNames[nextIndex]) == false)
+                    Events["NextMesh"].guiName = objectNames[nextIndex];
             }
         }
 
         protected void parseObjectNames()
         {
+            string[] elements;
             string[] objectBatchNames = objects.Split(';');
+
             if (objectBatchNames.Length >= 1)
             {
                 objectTransforms.Clear();
@@ -152,7 +164,7 @@ namespace WildBlueIndustries
                         if (newTransform != null)
                         {
                             newObjects.Add(newTransform);
-                            Log("Added object to list: " + objectNames[objectCount]);
+                            Log("Added object to list: " + objectNames[objectCount] + " index: " + batchCount);
                         }
                         else
                         {
@@ -161,6 +173,18 @@ namespace WildBlueIndustries
                     }
                     if (newObjects.Count > 0) objectTransforms.Add(newObjects);
                 }
+            }
+
+            //Go through each entry and split up the entry into its template name and mesh index
+            elements = objects.Split(';');
+            for (int index = 0; index < elements.Count<string>(); index++)
+                meshIndexes.Add(elements[index], index);
+
+            if (guiNames != null)
+            {
+                elements = guiNames.Split(';');
+                foreach (string element in elements)
+                    objectNames.Add(element);
             }
         }
 

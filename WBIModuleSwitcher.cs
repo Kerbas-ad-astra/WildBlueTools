@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 /*
-Source code copyrighgt 2014, by Michael Billard (Angel-125)
+Source code copyright 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.

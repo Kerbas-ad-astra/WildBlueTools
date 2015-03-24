@@ -53,6 +53,7 @@
     <Compile Include="WBIAnimation.cs" />
     <Compile Include="WBIExtendedDecoupler.cs" />
     <Compile Include="WBIHeater.cs" />
+    <Compile Include="WBIHeatManager.cs" />
     <Compile Include="WBIInflatablePartModule.cs" />
     <Compile Include="WBIMeshHelper.cs" />
     <Compile Include="WBIModuleSwitcher.cs" />
