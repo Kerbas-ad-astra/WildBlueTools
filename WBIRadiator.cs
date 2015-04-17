@@ -75,7 +75,7 @@ namespace WildBlueIndustries
             if (panelState == panelStates.EXTENDED)
             {
                 Fields["currentState"].guiName = "Temperature";
-                currentState = String.Format("{0:#.##}c", this.part.temperature);
+                currentState = String.Format("{0:#.##}C", this.part.temperature);
             }
             else
             {

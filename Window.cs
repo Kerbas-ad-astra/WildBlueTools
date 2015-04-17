@@ -147,7 +147,7 @@ namespace WildBlueIndustries
             return windowConfig;
         }
 
-        public void OnGUI()
+        public virtual void OnGUI()
         {
             if (visible && windowPos.Contains(new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y)))
                 InputLockManager.SetControlLock("LockMyWindow" + windowId);
