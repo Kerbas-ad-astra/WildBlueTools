@@ -31,9 +31,6 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public float heatGenerated = 0f;
 
-//        public static List<WBIRadiator> radiators = new List<WBIRadiator>();
-//        public static int vesselPartCount = -1;
-
         public bool heaterIsOn = false;
         public float totalHeatToShed = 0f;
         public bool isOverheated = false;
@@ -90,8 +87,6 @@ namespace WildBlueIndustries
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
-//            if (HighLogic.LoadedSceneIsFlight)
-//                vesselPartCount = -1;
         }
 
         public override void OnSave(ConfigNode node)
