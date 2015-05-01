@@ -1,0 +1,56 @@
+﻿PART
+{
+	module = Part
+	rescaleFactor = 1
+	node_stack_attach = 0.0, 0.0, 0.0, 0.0, -1.0, 0.0
+	subcategory = 0
+	attachRules = 1,1,0,0,1
+	mass = 0.5
+	dragModelType = default
+	maximum_drag = 0.2
+	minimum_drag = 0.3
+	angularDrag = 2
+	crashTolerance = 6
+	breakingForce = 200
+	breakingTorque = 200
+	maxTemp = 2880
+	thermalMassModifier = 2
+	emissiveConstant = 0.985
+	heatConductivity = 0.1
+	MODEL
+	{
+		model = WildBlueIndustries/DSEV/Assets/LargeRadiator
+	}
+	MODULE
+	{
+		name = ModuleRadiator
+		animationName = Deploy
+		pivotName = sunPivot
+		IsBreakable = true
+		raycastTransformName = suncatcher
+		chargeRate = 0
+		workingTempFactor = 0.85
+		coolantResource = Coolant
+		coolantDumpRate = 66.67
+		INPUT_RESOURCE
+		{
+			name = Coolant
+			flowMode = FLOW_NONE
+			ratio = 1.0
+		}
+	}
+	RESOURCE
+	{
+		name = Coolant
+		amount = 4000
+		maxAmount = 4000
+	}
+	MODULE
+	{
+		name = USI_ModuleRecycleablePart
+	}
+	MODULE
+	{
+		name = KOSNameTag
+	}
+}

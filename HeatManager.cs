@@ -14,8 +14,6 @@ Note that Wild Blue Industries is a ficticious entity
 created for entertainment purposes. It is in no way meant to represent a real entity.
 Any similarity to a real entity is purely coincidental.
 
-Portions of this software use code from the Firespitter plugin by Snjo, used with permission. Thanks Snjo for sharing how to switch meshes. :)
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 namespace WildBlueIndustries
@@ -23,6 +21,8 @@ namespace WildBlueIndustries
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class HeatManager : MonoBehaviour
     {
+        private const float kRoomTemperature = 293f;
+
         public List<ModuleRadiator> radiators = new List<ModuleRadiator>();
         public List<Part> nonRadiatorParts = new List<Part>();
 
@@ -46,12 +46,29 @@ namespace WildBlueIndustries
                 //find all the radiators and non-radiator parts.
                 if (activeVessel.Parts.Count != vesselPartCount)
                 {
-                    radiators = activeVessel.FindPartModulesImplementing<ModuleRadiator>();
+                    ModuleRadiator radiator;
+                    foreach (Part part in activeVessel.Parts)
+                    {
+                        radiator = part.FindModuleImplementing<ModuleRadiator>();
+                        if (radiator == null)
+                            nonRadiatorParts.Add(part);
+                        else
+                            radiators.Add(radiator);
+                    }
+
+//                    radiators = activeVessel.FindPartModulesImplementing<ModuleRadiator>();
+//                    if (radiators == null)
+//                        return;
                 }
             }
 
             //Now, manage the heat
             ManageHeat();
+
+            //Since ModuleRadiator derives from ModuleDeployableSolarPanel, we don't get a fixed update to override.
+            //So we'll lend a hand here...
+            foreach (ModuleRadiator radiator in radiators)
+                radiator.UpdateState();
         }
 
         public void ManageHeat()
@@ -59,24 +76,24 @@ namespace WildBlueIndustries
             //Amount of thermal energy in the system, defined as thermal mass * temperature
             double partThermalEnergy = 0;
 
-            //The part's thermal energy at ambient temperature
-            double partThermalAtAmbient = 0;
+            //The part's thermal energy at room temperature
+            //We use room temp so that we don't try to cool the vessel down to, say,
+            //a few degrees above absolute zero.
+            double partThermalAtRoomTemp = 0;
 
             //Maximum amount of thermal energy that may be transferred to the radiators.
             double partMaxThermalTransfer = 0f;
 
-            //Amount of thermal energy to transfer per active radiator (defined as a radiator that is extended and working)
+            //Amount of thermal energy to transfer per active radiator
             double thermalTransferPerRadiator = 0f;
 
-            foreach (Part part in activeVessel.parts)
+            foreach (Part part in nonRadiatorParts)
             {
-                //Calculate the thermal energy transfer
+                //Calculate the thermal energy transfer (thermal energy = kJ/K * K = kJ)
                 partThermalEnergy = part.thermalMass * part.temperature;
-                partThermalAtAmbient = part.thermalMass * part.externalTemperature;
-                partMaxThermalTransfer = partThermalEnergy - partThermalAtAmbient;
+                partThermalAtRoomTemp = part.thermalMass * kRoomTemperature;
+                partMaxThermalTransfer = partThermalEnergy - partThermalAtRoomTemp;
                 thermalTransferPerRadiator = partMaxThermalTransfer / radiators.Count;
-
-                //TODO: Account for crew capacity
 
                 //Now, distribute the heat to all active radiators.
                 foreach (ModuleRadiator radiator in radiators)
@@ -91,10 +108,6 @@ namespace WildBlueIndustries
                         //Practice conservation of heat!
                         part.AddThermalFlux(-thermalTransferPerRadiator);
                     }
-
-                    //Since ModuleRadiator derives from ModuleDeployableSolarPanel, we don't get a fixed update to override.
-                    //So we'll lend a hand here...
-                    radiator.UpdateState();
                 }
             }
         }

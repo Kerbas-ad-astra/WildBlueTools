@@ -54,19 +54,20 @@
     <Compile Include="ModuleRadiator.cs" />
     <Compile Include="WBIAnimation.cs" />
     <Compile Include="WBIExtendedDecoupler.cs" />
-    <Compile Include="WBIHeater.cs" />
     <Compile Include="HeatManager.cs" />
     <Compile Include="WBIInflatablePartModule.cs" />
     <Compile Include="WBIMeshHelper.cs" />
     <Compile Include="WBIModuleSwitcher.cs" />
     <Compile Include="WBIResourceSwitcher.cs" />
     <Compile Include="TemplatesModel.cs" />
-    <Compile Include="WBIRadiator.cs" />
     <Compile Include="WindowUtils.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="Window.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="TextFile1.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
