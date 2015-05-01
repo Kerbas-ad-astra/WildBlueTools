@@ -164,11 +164,9 @@ namespace WildBlueIndustries
                         if (newTransform != null)
                         {
                             newObjects.Add(newTransform);
-                            Log("Added object to list: " + objectNames[objectCount] + " index: " + batchCount);
                         }
                         else
                         {
-                            Log("Could not find object " + objectNames[objectCount]);
                         }
                     }
                     if (newObjects.Count > 0) objectTransforms.Add(newObjects);
@@ -196,10 +194,8 @@ namespace WildBlueIndustries
                 {
                     for (int j = 0; j < objectTransforms[i].Count; j++)
                     {
-                        Log("Setting object enabled");
                         objectTransforms[i][j].gameObject.SetActive(false);
 
-                        Log("setting collider states");
                         if (objectTransforms[i][j].gameObject.collider != null)
                             objectTransforms[i][j].gameObject.collider.enabled = false;
                     }
@@ -217,7 +213,6 @@ namespace WildBlueIndustries
 
                 if (objectTransforms[objectNumber][i].gameObject.collider != null)
                 {
-                    Log("Setting collider true on new active object");
                     objectTransforms[objectNumber][i].gameObject.collider.enabled = true;
                 }
             }

@@ -23,7 +23,8 @@ namespace WildBlueIndustries
 
     public class WBIHeater : ExtendedPartModule
     {
-        const float kMinimumHeatShedFactor= 0.001f;
+        const float kMinimumHeatShedFactor = 0.001f;
+        const float kMinimumHeatPerTick = 1.2f;
 
         [KSPField(isPersistant = true)]
         public bool manageHeat = false;
@@ -31,12 +32,16 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public float heatGenerated = 0f;
 
+        [KSPField(isPersistant = true)]
         public bool heaterIsOn = false;
+
         public float totalHeatToShed = 0f;
         public bool isOverheated = false;
 
         public OnOverheat onOverheatDelegate;
         public OnCooldown onCooldownDelegate;
+
+        private Dictionary<double, List<WBIRadiator>> categorizedRadiators = new Dictionary<double, List<WBIRadiator>>();
 
         public virtual void Activate()
         {
@@ -57,7 +62,7 @@ namespace WildBlueIndustries
         }
 
         [KSPAction("Toggle Heater")]
-        public void ToggleHeaterAction(KSPActionParam param)
+        public virtual void ToggleHeaterAction(KSPActionParam param)
         {
             ToggleHeater();
         }
@@ -84,6 +89,15 @@ namespace WildBlueIndustries
             }
         }
 
+        public override string GetInfo()
+        {
+            string baseInfo = base.GetInfo();
+
+            baseInfo += "- <b>Heat generated: </b>" + heatGenerated;
+
+            return baseInfo;
+        }
+
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
@@ -100,201 +114,20 @@ namespace WildBlueIndustries
             Events["ToggleHeater"].guiName = "Heat On";
         }
 
-        public virtual void ManageHeat(List<WBIRadiator> radiators)
+        public virtual float GenerateHeat()
         {
-            if (manageHeat == false)
-                return;
-
-            PartResource heatSink = this.part.Resources["SystemHeat"];
-            float heatRemaining = 0f;
-            float heaterShedRate = heatGenerated * kMinimumHeatShedFactor;
-            float heatToDistribute = 0f;
-
             //Get heat to distribute
             //If the heater is on then distribute the generated heat
             if (heaterIsOn)
                 totalHeatToShed = heatGenerated;
 
-            //If the heater is off, then distribute the heat stored in the heatsink.
-            else if (heatSink.amount > 0)
-                totalHeatToShed = (float)heatSink.amount;
-
-            //Nothing to distribute
-            else
-                totalHeatToShed = 0f;
-
             //Give derived classes a chance to adjust the heat to distribute
-            if (!isOverheated && heaterIsOn)
-                ModTotalHeatToShed();
-            if (totalHeatToShed <= 0f)
-                return;
-
-            //Calculate the heat to distribute amongst the radiators
-            //Heat generated is calibrated to Time.fixedDeltaTime instead of TimeWarp.fixedDeltaTime.
-            //Whether we are at 1x time or 100000x time, the rate of change stays relative.
-            //Plus it avoids the headaches with timewarp...
-            totalHeatToShed = totalHeatToShed * Time.fixedDeltaTime;
-            if (radiators.Count > 0)
-                heatToDistribute = totalHeatToShed / (float)radiators.Count;
-            else
-                heatToDistribute = totalHeatToShed;
-
-            //If we have heat in the heat sink, make sure to distribute the minimum level of heat
-            if (heatSink.amount > 0f && heatToDistribute < heaterShedRate)
-                heatToDistribute = heaterShedRate;
-
-            //Heater is off, see if we can shed our own internal heat
-            if (heaterIsOn == false)
-            {
-                //Threshold to make sure we kill all the heat
-                if (heatSink.amount <= heaterShedRate)
-                {
-                    heatToDistribute = 0f;
-                    heatSink.amount = 0f;
-                    isOverheated = false;
-                    HeaterHasCooled();
-                    return;
-                }
-
-                heatSink.amount -= heatToDistribute;
-            }
-
-            //Distribute the heat
-            if (radiators.Count == 0)
-                heatRemaining = heatToDistribute;
-            foreach (WBIRadiator radiator in radiators)
-                heatRemaining += radiator.TransferHeat(heatToDistribute);
-
-            //If we didn't shed any heat then don't update the heat sink.
-            if (isOverheated && heatRemaining >= heatToDistribute)
-                return;
-
-            //If we have heat remaining then dump it into our own heat sink
-            if (heatRemaining > 0f)
-            {
-                //If we've pretty much bottomed out the heat sink then we're no longer overheated.
-                if (isOverheated && heatSink.amount <= heatToDistribute)
-                {
-                    heatSink.amount = 0.0f;
-                    isOverheated = false;
-                }
-
-                //If we have heat remaining and it won't overload the heat sink then add the remaining heat
-                if (isOverheated == false && (heatSink.amount + heatRemaining <= heatSink.maxAmount))
-                {
-                    heatSink.amount += heatRemaining;
-                }
-
-                //We are overheating!
-                else if (isOverheated == false)
-                {
-                    heatSink.amount += heatRemaining;
-                    isOverheated = true;
-                    heaterIsOn = false;
-                    OverheatWarning();
-                }
-            }
-
-        }
-
-        public override void OnFixedUpdate()
-        {
-            base.OnFixedUpdate();
-/*
-            if (manageHeat == false)
-                return;
-            FindRadiators();
-
-            PartResource heatSink = this.part.Resources["SystemHeat"];
-            float heatRemaining = 0f;
-            float heaterShedRate = heatGenerated * kMinimumHeatShedFactor;
-            float heatToDistribute = 0f;
-
-            //Get heat to distribute
-            //If the heater is on then distribute the generated heat
             if (heaterIsOn)
-                totalHeatToShed = heatGenerated;
-
-            //If the heater is off, then distribute the heat stored in the heatsink.
-            else if (heatSink.amount > 0)
-                totalHeatToShed = (float)heatSink.amount;
-
-            //Nothing to distribute
-            else
-                totalHeatToShed = 0f;
-
-            //Give derived classes a chance to adjust the heat to distribute
-            if (!isOverheated && heaterIsOn)
                 ModTotalHeatToShed();
             if (totalHeatToShed <= 0f)
-                return;
+                return 0;
 
-            //Calculate the heat to distribute amongst the radiators
-            //Heat generated is calibrated to Time.fixedDeltaTime instead of TimeWarp.fixedDeltaTime.
-            //Whether we are at 1x time or 100000x time, the rate of change stays relative.
-            //Plus it avoids the headaches with timewarp...
-            totalHeatToShed = totalHeatToShed * Time.fixedDeltaTime;
-            if (radiators.Count > 0)
-                heatToDistribute = totalHeatToShed / (float)radiators.Count;
-            else
-                heatToDistribute = totalHeatToShed;
-            
-            //If we have heat in the heat sink, make sure to distribute the minimum level of heat
-            if (heatSink.amount > 0f && heatToDistribute < heaterShedRate)
-                heatToDistribute = heaterShedRate;
-
-            //Heater is off, see if we can shed our own internal heat
-            if (heaterIsOn == false)
-            {
-                //Threshold to make sure we kill all the heat
-                if (heatSink.amount <= heaterShedRate)
-                {
-                    heatToDistribute = 0f;
-                    heatSink.amount = 0f;
-                    isOverheated = false;
-                    HeaterHasCooled();
-                    return;
-                }
-
-                heatSink.amount -= heatToDistribute;
-            }
-
-            //Distribute the heat
-            if (radiators.Count == 0)
-                heatRemaining = heatToDistribute;
-            foreach (WBIRadiator radiator in radiators)
-                heatRemaining += radiator.TransferHeat(heatToDistribute);
-
-            //If we didn't shed any heat then don't update the heat sink.
-            if (isOverheated && heatRemaining >= heatToDistribute)
-                return;
-
-            //If we have heat remaining then dump it into our own heat sink
-            if (heatRemaining > 0f)
-            {
-                //If we've pretty much bottomed out the heat sink then we're no longer overheated.
-                if (isOverheated && heatSink.amount <= heatToDistribute)
-                {
-                    heatSink.amount = 0.0f;
-                    isOverheated = false;
-                }
-
-                //If we have heat remaining and it won't overload the heat sink then add the remaining heat
-                if (isOverheated ==  false && (heatSink.amount + heatRemaining <= heatSink.maxAmount))
-                {
-                    heatSink.amount += heatRemaining;
-                }
-
-                //We are overheating!
-                else if (isOverheated == false)
-                {
-                    heatSink.amount += heatRemaining;
-                    isOverheated = true;
-                    heaterIsOn = false;
-                    OverheatWarning();
-                }
-            }
-*/
+            return totalHeatToShed;
         }
 
         public virtual void ModTotalHeatToShed()
@@ -303,42 +136,21 @@ namespace WildBlueIndustries
 
         public virtual void HeaterHasCooled()
         {
+            isOverheated = false;
             if (onCooldownDelegate != null)
                 onCooldownDelegate();
         }
 
         public virtual void OverheatWarning()
         {
+            isOverheated = true;
+            heaterIsOn = false;
+
             ScreenMessages.PostScreenMessage("WARNING! Heat is beyond capacity!", 5.0f, ScreenMessageStyle.UPPER_CENTER);
 
             if (onOverheatDelegate != null)
                 onOverheatDelegate();
         }
-
-        /*
-        public virtual void FindRadiators()
-        {
-            List<WBIRadiator> partRadiators;
-            if (this.part.vessel == null)
-                return;
-            if (this.part.vessel.parts.Count == vesselPartCount)
-                return;
-
-            vesselPartCount = this.part.vessel.parts.Count;
-            radiators.Clear();
-
-            foreach (Part part in this.part.vessel.parts)
-            {
-                if (part == this.part)
-                    continue;
-
-                partRadiators = part.FindModulesImplementing<WBIRadiator>();
-
-                foreach (WBIRadiator radiator in partRadiators)
-                    radiators.Add(radiator);
-            }
-        }
-         */
 
         public virtual void ShowGui(bool isGuiVisible)
         {

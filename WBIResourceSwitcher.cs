@@ -59,7 +59,8 @@ namespace WildBlueIndustries
         //Since not all storage containers are equal, the
         //capacityFactor is used to determine how much of the template's base resource amount
         //applies to the container.
-        protected float capacityFactor = 1.0f;
+        [KSPField(isPersistant = true)]
+        public float capacityFactor = 0f;
 
         //Helper objects
         protected string techRequiredToReconfigure;
@@ -137,6 +138,15 @@ namespace WildBlueIndustries
             ScreenMessages.PostScreenMessage("Unable to find a template to switch to.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
         }
 
+        public void ReloadTemplate()
+        {
+            if (CurrentTemplateIndex != -1)
+            {
+                UpdateContentsAndGui(CurrentTemplateIndex);
+                UpdateSymmetry(CurrentTemplateIndex);
+            }
+        }
+
         public string CurrentTemplateName
         {
             get
@@ -195,7 +205,7 @@ namespace WildBlueIndustries
             }
 
             //Make sure we have a valid index
-            if (templateIndex == -1 || templateIndex == CurrentTemplateIndex)
+            if (templateIndex == -1)
                 return;
 
             //Ok, we're good
@@ -297,6 +307,11 @@ namespace WildBlueIndustries
         #endregion
 
         #region Module Overrides
+        public override string GetInfo()
+        {
+            return "Check the tweakables menu for the different resources that the tank can hold.";
+        }
+
         public override void ToggleAnimation()
         {
             Log("ToggleAnimation called.");
@@ -580,23 +595,6 @@ namespace WildBlueIndustries
                 return;
             }
 
-            //Find all the that need to be saved.
-            //Saved resources are all the ones that are NOT on the list
-            //Resources that ARE on the list are found in the templates and will be replaced.
-            //If set to "ALL" then no resources will be saved.
-            /*
-            if (string.IsNullOrEmpty(_resourcesToReplace) == false)
-            {
-                if (_resourcesToReplace != "ALL")
-                {
-                    foreach (PartResource resourceToCheck in resourceList)
-                    {
-                        if (_resourcesToReplace.Contains(resourceToCheck.resourceName) == false)
-                            savedResources.Add(resourceToCheck);
-                    }
-                }
-            }*/
-
             //Clear the list
             //Much quicker than removing individual resources...
             PartResource[] partResources = this.part.GetComponents<PartResource>();
@@ -670,6 +668,9 @@ namespace WildBlueIndustries
 
         protected void updateDecalsFromTemplate(ConfigNode nodeTemplate)
         {
+            if (string.IsNullOrEmpty(_decalBasePath))
+                return;
+
             Log("updateDecalsFromTemplate called");
             string value;
 
@@ -680,25 +681,31 @@ namespace WildBlueIndustries
                 shortName = value;
                 Log("New shortName: " + shortName);
 
-                if (parameterOverrides.ContainsKey(shortName) == false)
+                //Logo panel
+                if (parameterOverrides.ContainsKey(shortName))
                 {
-                    Log("Decal " + shortName + " not found!");
-                    Log("parameterOverrides count: " + parameterOverrides.Count);
-                    foreach (string key in parameterOverrides.Keys)
-                        Log("Key from parameterOverrides: " + key);
+                    value = parameterOverrides[shortName].GetValue("logoPanel");
+
+                    if (!string.IsNullOrEmpty(value))
+                        logoPanelName = value;
+                }
+                else
+                {
+                    logoPanelName = nodeTemplate.GetValue("logoPanel");
                 }
 
-                //Logo panel
-                value = parameterOverrides[shortName].GetValue("logoPanel");
-                Log("value logoPanel " + value);
-                if (!string.IsNullOrEmpty(value))
-                    logoPanelName = value;
-
                 //Glow panel
-                value = parameterOverrides[shortName].GetValue("glowPanel");
-                Log("value glowPanel " + value);
-                if (!string.IsNullOrEmpty(value))
-                    glowPanelName = value;
+                if (parameterOverrides.ContainsKey(shortName))
+                {
+                    value = parameterOverrides[shortName].GetValue("glowPanel");
+
+                    if (!string.IsNullOrEmpty(value))
+                        glowPanelName = value;
+                }
+                else
+                {
+                    glowPanelName = nodeTemplate.GetValue("glowPanel");
+                }
 
                 //Change the decals
                 changeDecals();
@@ -772,9 +779,12 @@ namespace WildBlueIndustries
             string value;
 
             //capacity factor
-            value = protoNode.GetValue("capacityFactor");
-            if (string.IsNullOrEmpty(value) == false)
-                capacityFactor = float.Parse(value);
+            if (capacityFactor == 0f)
+            {
+                value = protoNode.GetValue("capacityFactor");
+                if (string.IsNullOrEmpty(value) == false)
+                    capacityFactor = float.Parse(value);
+            }
 
             value = protoNode.GetValue("fieldReconfigurable");
             if (string.IsNullOrEmpty(value) == false)

@@ -88,7 +88,6 @@ namespace WildBlueIndustries
             ConfigNode protoNode = null;
             bool foundMyPart = protoPartNodes.ContainsKey(protoNodeKey);
 
-            Log("protoNodeKey: " + protoNodeKey);
             //Try an alternate method to find the part
             if (!foundMyPart)
             {

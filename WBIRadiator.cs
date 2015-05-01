@@ -17,32 +17,106 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public class WBIRadiator : ModuleDeployableSolarPanel
+    public enum ERadiatorStates
     {
-        [KSPField(guiActive = true, guiName = "State: ")]
+        Idle,
+        HeatTransferHeating,
+        HeatTransferCooling,
+        CoolingOff
+    }
+
+    public class WBIRadiator : ExtendedPartModule
+    {
+        public const float kDefaultRadiatorCapacity = 105f;
+
+//        [KSPField(guiActive = true, guiName = "Temperature")]
+//        public string radiatorTemperature;
+
+        [KSPField(guiActive = true, guiName = "Temperature")]
         public string currentState;
 
         [KSPField(isPersistant = true)]
-        public float heatCapacity;
+        public float radiatorCapacity;
 
         [KSPField(isPersistant = true)]
-        public float coolantMass;
+        public float passiveRadiatorCapacity;
 
         [KSPField(isPersistant = true)]
-        public float radiatorArea;
+        float targetHeat;
 
         [KSPField(isPersistant = true)]
-        public float radiatorAreaStowed;
+        ERadiatorStates radiatorState;
 
         [KSPField(isPersistant = true)]
-        public float emissivity;
+        float curLerp = 0f;
 
-        float constEmissArea;
-        float shcCoolantMass;
+        [KSPField(isPersistant = true)]
+        float lerpHeatRate = 0.1f;
+
+        [KSPField(isPersistant = true)]
+        float lerpCoolRate = 0.03f;
+
+        [KSPField(isPersistant = true)]
+        float curHeat = 0f;
+
+        [KSPField(isPersistant = true)]
+        float startingHeat = 0f;
+
+        ModuleDeployableSolarPanel solarPanel;
+
+        public virtual bool isActive
+        {
+            get
+            {
+                if (solarPanel == null)
+                    return true;
+
+                else if (solarPanel.panelState == ModuleDeployableSolarPanel.panelStates.EXTENDED)
+                    return true;
+
+                else
+                    return false;
+            }
+        }
+
+        public bool hasCooledOff
+        {
+            get
+            {
+                if (curHeat <= 0.001f)
+                {
+                    radiatorState = ERadiatorStates.Idle;
+                    curLerp = 0f;
+                    targetHeat = 0f;
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        public override string GetInfo()
+        {
+            string baseInfo = base.GetInfo();
+
+            baseInfo += "- <b>Radiator capacity (deployed): </b>" + radiatorCapacity;
+            baseInfo += "\n- <b>Radiator capacity (stowed): </b>" + passiveRadiatorCapacity;
+
+            return baseInfo;
+        }
 
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
+            /*
+            //Remove the solar panel info
+            foreach (AvailablePart.ModuleInfo mi in part.partInfo.moduleInfos)
+                Debug.Log("FRED module title: " + mi.moduleName);
+
+            if (part.partInfo != null)
+                if (part.partInfo.moduleInfos != null)
+                    part.partInfo.moduleInfos.RemoveAll(modi => modi.moduleName == "Deployable Solar Panel");
+             */
         }
 
         public override void OnSave(ConfigNode node)
@@ -54,34 +128,24 @@ namespace WildBlueIndustries
         {
             base.OnStart(state);
 
-            Fields["sunAOA"].guiActive = false;
-            Fields["flowRate"].guiActive = false;
+            if (radiatorCapacity == 0f)
+                radiatorCapacity = kDefaultRadiatorCapacity;
 
-            if (panelState == panelStates.EXTENDED)
-                constEmissArea = Utils.StefanBoltzmann * emissivity * radiatorArea;
-            else
-                constEmissArea = Utils.StefanBoltzmann * emissivity * radiatorAreaStowed;
+            solarPanel = this.part.FindModuleImplementing<ModuleDeployableSolarPanel>();
+            if (solarPanel != null)
+            {
+                solarPanel.Fields["sunAOA"].guiActive = false;
+                solarPanel.Fields["flowRate"].guiActive = false;
+            }
 
-            //Coolant mass is in metric tons, convert it to kilograms
-            shcCoolantMass = heatCapacity * (coolantMass * 1000f);
+            if (curHeat == targetHeat)
+                radiatorState = ERadiatorStates.Idle;
         }
 
-        public virtual void ManageHeat()
+        public override void OnFixedUpdate()
         {
-            RadiateHeat();
-
+            base.OnFixedUpdate();
             SetRadiatorColor();
-
-            if (panelState == panelStates.EXTENDED)
-            {
-                Fields["currentState"].guiName = "Temperature";
-                currentState = String.Format("{0:#.##}C", this.part.temperature);
-            }
-            else
-            {
-                Fields["currentState"].guiName = "State";
-                currentState = status;
-            }
         }
 
         public void SetRadiatorColor()
@@ -90,81 +154,123 @@ namespace WildBlueIndustries
                 return;
 
             Renderer[] renderers = this.part.FindModelComponents<Renderer>();
-            float heatRatio = this.part.temperature / this.part.maxTemp;
+            float ratio = (float)(this.part.temperature - 600.0f) / (float)(this.part.maxTemp - 600.0f);
 
-            if (this.part.temperature < 0f)
-                heatRatio = 0f;
+            if (ratio < 0.0f)
+                ratio = 0f;
 
             //Set the emissive color
+            //768k is when they should start glowing red
             foreach (Renderer renderer in renderers)
-                renderer.material.SetColor("_EmissiveColor", new Color(heatRatio, heatRatio, heatRatio));
+                renderer.material.SetColor("_EmissiveColor", new Color(ratio, ratio, ratio));
+
+            currentState = String.Format("{0:#.##}K", this.part.temperature);
         }
 
-        public void RadiateHeat()
+        public float RadiateHeat()
         {
-            if (panelState == panelStates.EXTENDED)
-                constEmissArea = Utils.StefanBoltzmann * emissivity * radiatorArea;
+            return 0;
+            calculateCurrentHeat();
+
+            SetRadiatorColor();
+
+            setRadiatorState();
+
+            if (this.isActive)
+                return radiatorCapacity;
+
             else
-                constEmissArea = Utils.StefanBoltzmann * emissivity * radiatorAreaStowed;
-
-            //The amount of heat radiated in joules is calculated using the Stefan-Boltzmann law
-            float heatRadiated = constEmissArea * Mathf.Pow(this.part.temperature + Utils.CelsiusToKelvin, 4.0f);
-            PartResource heatSink = this.part.Resources["SystemHeat"];
-
-            //Dump heat from the heat sink, which is rated in terms of megajoules
-            heatSink.amount -= heatRadiated / 1000000f;
-            if (heatSink.amount < 0.1f)
-            {
-                heatSink.amount = 0f;
-                return;
-            }
-
-            //Now calculate the temperature decrease
-            float temperatureDecrease = (float)(heatSink.amount * 1000000f) / shcCoolantMass;
-            float currentTemperature = this.part.temperature + Utils.CelsiusToKelvin;
-            float newTemperature = currentTemperature + temperatureDecrease;
-
-            this.part.temperature = newTemperature - Utils.CelsiusToKelvin;
+                return passiveRadiatorCapacity;
         }
 
         public float TransferHeat(float transferAmount)
         {
-            PartResource heatSink = this.part.Resources["SystemHeat"];
+            return 0;
+            float heatToTransfer = transferAmount;
+            float heatCapacity;
 
-            //Broken panel? no heat transfer
-            if (panelState == panelStates.BROKEN)
-                return transferAmount;
-
-            //If the heat sink is full, no transfer
-            if (heatSink.amount == heatSink.maxAmount)
-                return transferAmount;
-
-            //Temperature increase is based upon the specific heat capacity of the material and the mass of the material
-            //Heat input is converted to Joules
-            float temperatureIncrease = (transferAmount * 1000000f) / shcCoolantMass;
-            float currentTemperature = this.part.temperature + Utils.CelsiusToKelvin;
-            float newTemperature = currentTemperature + temperatureIncrease;
-            float heatRemaining = 0;
-
-            //Safety feature: If adding the heat would exceed the radiator's temperature, then reject the transfer.
-            if (newTemperature - Utils.CelsiusToKelvin >= this.part.maxTemp)
-                return transferAmount;
-
-            this.part.temperature = newTemperature - Utils.CelsiusToKelvin;
-
-            //Make sure we haven't maxed out the heat sink
-            if (heatSink.amount + transferAmount <= heatSink.maxAmount)
-            {
-                heatSink.amount += transferAmount;
-            }
-
+            if (this.isActive)
+                heatCapacity = radiatorCapacity;
             else
+                heatCapacity = passiveRadiatorCapacity;
+
+            if (radiatorState == ERadiatorStates.CoolingOff)
+                return radiatorCapacity;
+
+            if (heatToTransfer > heatCapacity)
+                heatToTransfer = heatCapacity;
+
+            if (heatToTransfer == targetHeat)
+                return heatToTransfer;
+
+            targetHeat = transferAmount;
+            startingHeat = curHeat;
+            curLerp = 0f;
+
+            if (targetHeat > startingHeat)
+                radiatorState = ERadiatorStates.HeatTransferHeating;
+
+            else if (targetHeat < startingHeat)
+                radiatorState = ERadiatorStates.HeatTransferCooling;
+
+            return heatToTransfer;
+        }
+
+        #region Helpers
+        protected void calculateCurrentHeat()
+        {
+            if (radiatorState == ERadiatorStates.Idle)
+                return;
+
+            //Calculate current heat via lerp.
+            if (radiatorState == ERadiatorStates.HeatTransferHeating)
+                curLerp += Time.fixedDeltaTime * lerpHeatRate;
+            else if (this.isActive)
+                curLerp += Time.fixedDeltaTime * lerpCoolRate;
+            else
+                curLerp += Time.fixedDeltaTime * lerpCoolRate * 0.1f;
+
+            if (curLerp > 1.0f)
+                curLerp = 1.0f;
+
+            curHeat = Mathf.Lerp(startingHeat, targetHeat, curLerp);
+
+            if (curHeat == targetHeat)
+                radiatorState = ERadiatorStates.Idle;
+
+            if (curHeat < 0.001f)
             {
-                heatRemaining = (float)((heatSink.amount + transferAmount) - heatSink.maxAmount);
-                heatSink.amount = heatSink.maxAmount;
+                curHeat = 0;
+                radiatorState = ERadiatorStates.Idle;
+            }
+        }
+
+        protected void setRadiatorState()
+        {
+            switch (radiatorState)
+            {
+                case ERadiatorStates.HeatTransferHeating:
+                    currentState = "Heating up";
+                    break;
+
+                case ERadiatorStates.HeatTransferCooling:
+                    currentState = "Cooling down";
+                    break;
+
+                case ERadiatorStates.CoolingOff:
+                    currentState = string.Format("Overheated {0:f2}%", (1 - curLerp) * 100);
+                    break;
+
+                default:
+                    if (this.isActive && curHeat > 0.001f)
+                        currentState = "Radiating";
+                    else
+                        currentState = "Ready";
+                    break;
             }
 
-            return heatRemaining;
+            //radiatorTemperature = String.Format("{0:#.##}C", this.part.temperature);
         }
+        #endregion
     }
 }

@@ -24,6 +24,28 @@ namespace WildBlueIndustries
         public const float CelsiusToKelvin = 272.15f;
         public const float StefanBoltzmann = 5.67e-8f;
 
+        public static void showOnlyEmittersInList(Part part, List<string> emittersToShow)
+        {
+            KSPParticleEmitter[] emitters = part.GetComponentsInChildren<KSPParticleEmitter>();
+
+            foreach (KSPParticleEmitter emitter in emitters)
+            {
+                emitter.emit = false;
+                emitter.enabled = false;
+
+                if (emittersToShow != null)
+                {
+                    //If the emitter is on the list then show it
+                    if (emittersToShow.Contains(emitter.name))
+                    {
+                        emitter.emit = true;
+                        emitter.enabled = true;
+                    }
+                }
+            }
+
+        }
+
         //Reflection-like method to set a value on a field of a part module
         //Created to support late-binding of a third-party module
         //That way, if the third-party module changes, my modules that depend upon them
