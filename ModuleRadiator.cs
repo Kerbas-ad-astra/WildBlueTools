@@ -48,8 +48,6 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         protected string coolantValues = "";
 
-        ModuleDeployableSolarPanel solarPanel;
-
         #region Overrides and API
         [KSPAction("Toggle Cooling Cycle")]
         public void ToggleGoolingModeAction(KSPActionParam param)
@@ -99,12 +97,8 @@ namespace WildBlueIndustries
         {
             base.OnStart(state);
 
-            solarPanel = this.part.FindModuleImplementing<ModuleDeployableSolarPanel>();
-            if (solarPanel != null)
-            {
-                solarPanel.Fields["sunAOA"].guiActive = false;
-                solarPanel.Fields["flowRate"].guiActive = false;
-            }
+            Fields["sunAOA"].guiActive = false;
+            Fields["flowRate"].guiActive = false;
 
             //Set cooling mode. For now, default is closed.
             coolingCycleMode = CoolingCycleModes.closed;
