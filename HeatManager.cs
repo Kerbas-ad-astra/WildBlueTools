@@ -55,10 +55,6 @@ namespace WildBlueIndustries
                         else
                             radiators.Add(radiator);
                     }
-
-//                    radiators = activeVessel.FindPartModulesImplementing<ModuleRadiator>();
-//                    if (radiators == null)
-//                        return;
                 }
             }
 
@@ -76,13 +72,13 @@ namespace WildBlueIndustries
             //Amount of thermal energy in the system, defined as thermal mass * temperature
             double partThermalEnergy = 0;
 
-            //The part's thermal energy at room temperature
-            //We use room temp so that we don't try to cool the vessel down to, say,
-            //a few degrees above absolute zero.
-            double partThermalAtRoomTemp = 0;
+            //Thermal energy at the target temperature.
+            //Some parts may run hot, others want to stay cool.
+            //Either way we want to make sure that the part doesn't get too cold.
+            double partThermalAtTargetTemp = 0;
 
-            //Maximum amount of thermal energy that may be transferred to the radiators.
-            double partMaxThermalTransfer = 0f;
+            //Total amount of thermal energy that may be transferred to the radiators.
+            double partThermalTransfer = 0f;
 
             //Amount of thermal energy to transfer per active radiator
             double thermalTransferPerRadiator = 0f;
@@ -91,24 +87,23 @@ namespace WildBlueIndustries
             {
                 //Calculate the thermal energy transfer (thermal energy = kJ/K * K = kJ)
                 partThermalEnergy = part.thermalMass * part.temperature;
-                partThermalAtRoomTemp = part.thermalMass * kRoomTemperature;
-                partMaxThermalTransfer = partThermalEnergy - partThermalAtRoomTemp;
-                thermalTransferPerRadiator = partMaxThermalTransfer / radiators.Count;
+                partThermalAtTargetTemp = part.thermalMass * kRoomTemperature;
+                partThermalTransfer = partThermalEnergy - partThermalAtTargetTemp;
+                thermalTransferPerRadiator = partThermalTransfer / radiators.Count;
 
                 //Now, distribute the heat to all active radiators.
+                partThermalTransfer = 0f; //We'll use this to know how much heat was actually transferred.
                 foreach (ModuleRadiator radiator in radiators)
                 {
                     //If we have thermal energy to transfer, and the radiator can take the heat, then transfer the heat
-                    if (partMaxThermalTransfer > 0.001 && radiator.CanTakeTheHeat(thermalTransferPerRadiator))
-                    {
-                        //Add the heat to the radiator
-                        radiator.part.AddThermalFlux(thermalTransferPerRadiator);
-
-                        //Transfer the heat out of the part
-                        //Practice conservation of heat!
-                        part.AddThermalFlux(-thermalTransferPerRadiator);
-                    }
+                    if (thermalTransferPerRadiator > 0.001)
+                        partThermalTransfer += radiator.TransferHeat(thermalTransferPerRadiator);
                 }
+
+                //Transfer the heat out of the part
+                //Practice conservation of heat!
+                if (partThermalTransfer > 0.001f)
+                    part.AddThermalFlux(-partThermalTransfer);
             }
         }
 

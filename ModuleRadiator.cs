@@ -19,6 +19,7 @@ namespace WildBlueIndustries
 {
     public enum CoolingCycleModes
     {
+        active,  //Heat is pulled into the radiator and relies on stock game to cool off. Used when part does not deploy radiators.
         passive, //Heat is not pulled into the radiator and it relies upon stock game heat management
         closed,  //Heat is actively transferred into the radiator, but it relies on stock game to cool off.
         open     //Heat is actively transferred into the radiator, and coolant is expelled to rapidly cool the radiator.
@@ -52,11 +53,22 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public float coolantDumpRate;
 
+        //How many units of coolant/sec is lost while the ship is
+        //under acceleration
+        [KSPField(isPersistant = true)]
+        public float lossRateAccelerating;
+
         //Current cooling cycle mode.
         [KSPField(isPersistant = true)]
         public CoolingCycleModes coolingCycleMode;
 
+        //Amount of ec per second required to run the radiator, if any.
+        [KSPField(isPersistant = true)]
+        public double ecRequired;
+
         protected List<CoolantResource> coolantResources = new List<CoolantResource>();
+        protected double maxThermalTransfer = 0;
+        protected double currentThermalTransfer = 0;
 
         #region Overrides and API
         [KSPAction("Toggle Cooling Cycle")]
@@ -118,34 +130,44 @@ namespace WildBlueIndustries
 
         public void UpdateState()
         {
-            //For open-cycle cooling, dump coolant resources overboard and adjust thermal energy accordingly.
-            if (coolingCycleMode == CoolingCycleModes.open)
+            //Do we have enough electricity to run the radiator?
+            if (ecRequired > 0.001 && panelState == panelStates.EXTENDED)
             {
                 PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;
-                PartResourceDefinition resourceDef;
-                double coolantToDump = coolantDumpRate * TimeWarp.fixedDeltaTime;
-                double coolantDumped = 0;
-                double thermalEnergyCoolant = 0;
+                PartResourceDefinition resourceDef = definitions["ElectricCharge"];
+                double ecPerTimeTick = ecRequired * TimeWarp.fixedDeltaTime;
+                double ecSupplied = this.part.vessel.rootPart.RequestResource(resourceDef.id, ecPerTimeTick, ResourceFlowMode.ALL_VESSEL);
 
+                if (ecSupplied < ecPerTimeTick)
+                    return;
+            }
+
+            //For open-cycle cooling, dump coolant resources overboard and adjust thermal energy accordingly.
+            if (coolingCycleMode == CoolingCycleModes.open || (lossRateAccelerating > 0f && this.part.vessel.acceleration.magnitude > 0f) )
+            {
                 //Now go through the list of coolants and dump them overboard, carrying heat with them.
                 foreach (CoolantResource coolant in coolantResources)
                 {
-                    //The the resource definition
-                    resourceDef = definitions[coolant.name];
+                    if (coolingCycleMode == CoolingCycleModes.open)
+                        dumpCoolant(coolant, coolantDumpRate);
 
-                    //Now calculate the resource amount dumped and the thermal energy of that slug of resource.
-                    coolantDumped = this.part.RequestResource(resourceDef.id, coolantToDump * coolant.ratio, coolant.flowMode);
-                    thermalEnergyCoolant = this.part.temperature * this.part.resourceThermalMass * coolantDumped;
-
-                    //Practice conservation of energy...
-                    if (coolantDumped > 0.001)
-                        this.part.AddThermalFlux(-thermalEnergyCoolant);
+                    if (lossRateAccelerating > 0f)
+                        dumpCoolant(coolant, lossRateAccelerating);
                 }
             }
 
             //Now set the radiator color
-            //TODO: Can we use the built-in shader?
+            //The game's built-in shader is working but it doesn't look as nice.
             SetRadiatorColor();
+
+            //If we have heat to transfer in, then do so and reset
+            //We do this in one chunk for game performance.
+            if (currentThermalTransfer > 0.001)
+            {
+                this.part.AddThermalFlux(currentThermalTransfer);
+                currentThermalTransfer = 0f;
+                maxThermalTransfer = 0f;
+            }
         }
 
         public override string GetInfo()
@@ -160,25 +182,25 @@ namespace WildBlueIndustries
 
         }
 
-        public bool CanTakeTheHeat(double heatToTransfer)
+        public double TransferHeat(double heatToTransfer)
         {
-            //Thermal energy = thermal mass * temperature.
-            //Here we're also accounting for the working temperature
-            double thermalEnergy = this.part.thermalMass * this.part.maxTemp * workingTempFactor;
+            //If the panel isn't extended, then we cannot transfer any heat.
+            if (panelState != panelStates.EXTENDED)
+                return 0;
 
-            //Is the radiator active?
-            //Even radiators that aren't extended can take on some heat.
-            if (panelState == panelStates.BROKEN)
-                return false;
+            //Once per time-tick, calculate current and max thermal transfer
+            if (maxThermalTransfer < 0.001f)
+                maxThermalTransfer = this.part.thermalMass * this.part.maxTemp * workingTempFactor;
 
-            else if (panelState != panelStates.EXTENDED)
-                thermalEnergy *= kStowedThermalFactor;
+            //If we can take the heat then add it to our bucket.
+            if (currentThermalTransfer <= heatToTransfer)
+            {
+                currentThermalTransfer += heatToTransfer;
+                return heatToTransfer;
+            }
 
-            //Do we have the room?
-            if (thermalEnergy >= heatToTransfer)
-                return true;
-            else
-                return false;
+            //No heat transferred
+            return 0;
         }
         #endregion
 
@@ -202,6 +224,28 @@ namespace WildBlueIndustries
                 renderer.material.SetColor("_EmissiveColor", new Color(ratio, ratio, ratio));
 
             radiatorTemperature = String.Format("{0:#.##}K", this.part.temperature);
+        }
+
+        protected void dumpCoolant(CoolantResource coolant, double dumpRate)
+        {
+            PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;
+            PartResourceDefinition resourceDef;
+            double coolantToDump = dumpRate * TimeWarp.fixedDeltaTime;
+            double coolantDumped = 0;
+            double thermalEnergyCoolant = 0;
+
+            //The the resource definition
+            resourceDef = definitions[coolant.name];
+
+            //Now calculate the resource amount dumped and the thermal energy of that slug of resource.
+            coolantDumped = this.part.RequestResource(resourceDef.id, coolantToDump * coolant.ratio, coolant.flowMode);
+            if (coolantDumped <= 0.001)
+                return;
+            thermalEnergyCoolant = this.part.temperature * this.part.resourceThermalMass * coolantDumped;
+
+            //Practice conservation of energy...
+            if (coolantDumped > 0.001)
+                this.part.AddThermalFlux(-thermalEnergyCoolant);
         }
 
         protected void getCoolantNodes()
