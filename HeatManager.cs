@@ -9,6 +9,7 @@ using KSP.IO;
 Source code copyrighgt 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
+If you want to use this code, give me a shout on the KSP forums! :)
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
 Note that Wild Blue Industries is a ficticious entity 
 created for entertainment purposes. It is in no way meant to represent a real entity.
@@ -18,16 +19,39 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public class PartTargetTemp
+    {
+        public Part part;
+        public double targetTemp;
+    }
+
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class HeatManager : MonoBehaviour
     {
-        private const float kRoomTemperature = 293f;
+        private const float kRoomTemperature = 293;
 
         public List<ModuleRadiator> radiators = new List<ModuleRadiator>();
-        public List<Part> nonRadiatorParts = new List<Part>();
+        public List<PartTargetTemp> partTargetTemps = new List<PartTargetTemp>();
 
         protected Vessel activeVessel = null;
         protected int vesselPartCount = -1;
+
+        //By default, the target temperature is 49% of the part's maximum temperature.
+        //This is just under the game's temperature warning gauge.
+        //This value can be configured in the Cooldown config file.
+        protected float maxTempPercent = 0.49f;
+
+        public void Start()
+        {
+            string value;
+            ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes("COOLDOWN");
+            if (nodes != null)
+            {
+                value = nodes[0].GetValue("maxTempPercent");
+                if (string.IsNullOrEmpty(value) == false)
+                    maxTempPercent = float.Parse(value);
+            }
+        }
 
         public void FixedUpdate()
         {
@@ -43,19 +67,8 @@ namespace WildBlueIndustries
                     return;
 
                 //If the part count has changed, such as when the vessel breaks up, docks, or undocks, then 
-                //find all the radiators and non-radiator parts.
-                if (activeVessel.Parts.Count != vesselPartCount)
-                {
-                    ModuleRadiator radiator;
-                    foreach (Part part in activeVessel.Parts)
-                    {
-                        radiator = part.FindModuleImplementing<ModuleRadiator>();
-                        if (radiator == null)
-                            nonRadiatorParts.Add(part);
-                        else
-                            radiators.Add(radiator);
-                    }
-                }
+                //find all the radiators and non-radiator parts and their target temperatures.
+                FindPartTemperatures();
             }
 
             //Now, manage the heat
@@ -65,6 +78,48 @@ namespace WildBlueIndustries
             //So we'll lend a hand here...
             foreach (ModuleRadiator radiator in radiators)
                 radiator.UpdateState();
+        }
+
+        public void FindPartTemperatures()
+        {
+            if (activeVessel.Parts.Count != vesselPartCount)
+            {
+                vesselPartCount = activeVessel.Parts.Count;
+                radiators.Clear();
+                partTargetTemps.Clear();
+
+                ModuleRadiator radiator;
+                foreach (Part part in activeVessel.Parts)
+                {
+                    //If the part has a radiator then add it to the radiator's list.
+                    radiator = part.FindModuleImplementing<ModuleRadiator>();
+                    if (radiator != null)
+                    {
+                        radiators.Add(radiator);
+                        continue;
+                    }
+
+                    //It isn't a radiator, if it's physicsless then keep going
+                    if (part.PhysicsSignificance == 1)
+                        continue;
+
+                    //Create a new PartTargetTemp
+                    PartTargetTemp partTargetTemp = new PartTargetTemp();
+                    partTargetTemps.Add(partTargetTemp);
+                    partTargetTemp.part = part;
+
+                    //If the part has a ModuleTargetTemp then use its temperature
+
+                    //If the part is crewed then the target temperature is room temperature.
+                    if (part.CrewCapacity > 0)
+                        partTargetTemp.targetTemp = kRoomTemperature;
+
+                    //By default, the part will be kept at a percentage of its maximum temperature.
+                    //This can be configured in the Cooldown config file
+                    else
+                        partTargetTemp.targetTemp = part.maxTemp * maxTempPercent;
+                }
+            }
         }
 
         public void ManageHeat()
@@ -83,27 +138,26 @@ namespace WildBlueIndustries
             //Amount of thermal energy to transfer per active radiator
             double thermalTransferPerRadiator = 0f;
 
-            foreach (Part part in nonRadiatorParts)
+            foreach (PartTargetTemp partTargetTemp in partTargetTemps)
             {
                 //Calculate the thermal energy transfer (thermal energy = kJ/K * K = kJ)
-                partThermalEnergy = part.thermalMass * part.temperature;
-                partThermalAtTargetTemp = part.thermalMass * kRoomTemperature;
+                partThermalEnergy = partTargetTemp.part.thermalMass * partTargetTemp.part.temperature;
+                partThermalAtTargetTemp = partTargetTemp.part.thermalMass * partTargetTemp.targetTemp;
                 partThermalTransfer = partThermalEnergy - partThermalAtTargetTemp;
                 thermalTransferPerRadiator = partThermalTransfer / radiators.Count;
+
+                if (thermalTransferPerRadiator < 0.001f)
+                    continue;
 
                 //Now, distribute the heat to all active radiators.
                 partThermalTransfer = 0f; //We'll use this to know how much heat was actually transferred.
                 foreach (ModuleRadiator radiator in radiators)
-                {
-                    //If we have thermal energy to transfer, and the radiator can take the heat, then transfer the heat
-                    if (thermalTransferPerRadiator > 0.001)
-                        partThermalTransfer += radiator.TransferHeat(thermalTransferPerRadiator);
-                }
+                    partThermalTransfer += radiator.TransferHeat(thermalTransferPerRadiator);
 
                 //Transfer the heat out of the part
                 //Practice conservation of heat!
                 if (partThermalTransfer > 0.001f)
-                    part.AddThermalFlux(-partThermalTransfer);
+                    partTargetTemp.part.AddThermalFlux(-partThermalTransfer);
             }
         }
 

@@ -9,6 +9,7 @@ using KSP.IO;
 Source code copyright 2015, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
+If you want to use this code, give me a shout on the KSP forums! :)
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
 Note that Wild Blue Industries is a ficticious entity created for entertainment purposes. It is in no way meant to represent a real entity.
 Any similarity to a real entity is purely coincidental.
@@ -37,7 +38,6 @@ namespace WildBlueIndustries
         //768k is when object should start glowing red, but we lower it to make the animation glow look right.
         private const float kGlowTempOffset = 600f; //My custom Draper Point...
         private const string kDefaultCoolant = "Coolant";
-        private const float kStowedThermalFactor = 0.01f;
 
         //Status text
         [KSPField(guiActive = true, guiName = "Temperature")]
@@ -69,6 +69,8 @@ namespace WildBlueIndustries
         protected List<CoolantResource> coolantResources = new List<CoolantResource>();
         protected double maxThermalTransfer = 0;
         protected double currentThermalTransfer = 0;
+        PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;
+        PartResourceDefinition electricChargeDef;
 
         #region Overrides and API
         [KSPAction("Toggle Cooling Cycle")]
@@ -116,6 +118,9 @@ namespace WildBlueIndustries
         {
             base.OnStart(state);
 
+            //Get the resource definition for electric charge.
+            electricChargeDef = definitions["ElectricCharge"];
+
             //Since we are based upon the ModuleDeployableSolarPanel, hide its gui
             Fields["sunAOA"].guiActive = false;
             Fields["flowRate"].guiActive = false;
@@ -133,10 +138,8 @@ namespace WildBlueIndustries
             //Do we have enough electricity to run the radiator?
             if (ecRequired > 0.001 && panelState == panelStates.EXTENDED)
             {
-                PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;
-                PartResourceDefinition resourceDef = definitions["ElectricCharge"];
                 double ecPerTimeTick = ecRequired * TimeWarp.fixedDeltaTime;
-                double ecSupplied = this.part.vessel.rootPart.RequestResource(resourceDef.id, ecPerTimeTick, ResourceFlowMode.ALL_VESSEL);
+                double ecSupplied = this.part.vessel.rootPart.RequestResource(electricChargeDef.id, ecPerTimeTick, ResourceFlowMode.ALL_VESSEL);
 
                 if (ecSupplied < ecPerTimeTick)
                     return;
@@ -188,12 +191,16 @@ namespace WildBlueIndustries
             if (panelState != panelStates.EXTENDED)
                 return 0;
 
-            //Once per time-tick, calculate current and max thermal transfer
+            //Are we at or exceeding max operating temp?
+            if (this.part.temperature >= this.part.maxTemp * workingTempFactor)
+                return 0;
+
+            //Once per time-tick, calculate max thermal transfer
             if (maxThermalTransfer < 0.001f)
-                maxThermalTransfer = this.part.thermalMass * this.part.maxTemp * workingTempFactor;
+                maxThermalTransfer = (this.part.thermalMass * this.part.maxTemp * workingTempFactor) - (this.part.thermalMass * this.part.temperature);
 
             //If we can take the heat then add it to our bucket.
-            if (currentThermalTransfer <= heatToTransfer)
+            if (currentThermalTransfer + heatToTransfer <= maxThermalTransfer)
             {
                 currentThermalTransfer += heatToTransfer;
                 return heatToTransfer;
