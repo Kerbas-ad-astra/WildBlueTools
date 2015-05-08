@@ -233,6 +233,13 @@ namespace WildBlueIndustries
 
             //Set up the module in its new configuration
             RedecorateModule();
+
+            //Update the resource panel
+            if (HighLogic.LoadedSceneIsFlight && ResourceDisplay.Instance != null)
+            {
+                ResourceDisplay.Instance.Refresh();
+                ResourceDisplay.Instance.Update();
+            }
         }
 
         public virtual void RedecorateModule(bool payForRedecoration = true, bool loadTemplateResources = true)
