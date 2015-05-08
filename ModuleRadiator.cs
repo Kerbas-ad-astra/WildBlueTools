@@ -33,6 +33,8 @@ namespace WildBlueIndustries
         public float ratio;
     }
 
+    public delegate void RadiatorDestroyed(ModuleRadiator doomed);
+
     public class ModuleRadiator : ModuleDeployableSolarPanel
     {
         //768k is when object should start glowing red, but we lower it to make the animation glow look right.
@@ -65,6 +67,8 @@ namespace WildBlueIndustries
         //Amount of ec per second required to run the radiator, if any.
         [KSPField(isPersistant = true)]
         public double ecRequired;
+
+        public RadiatorDestroyed radiatorDestroyedDelegate;
 
         protected List<CoolantResource> coolantResources = new List<CoolantResource>();
         protected double maxThermalTransfer = 0;
@@ -131,6 +135,14 @@ namespace WildBlueIndustries
 
             //Dig into the proto part and find the coolant resource nodes.
             getCoolantNodes();
+
+            this.part.OnJustAboutToBeDestroyed = OnAboutToBeDestroyed;
+        }
+
+        public void OnAboutToBeDestroyed()
+        {
+            if (radiatorDestroyedDelegate != null)
+                radiatorDestroyedDelegate(this);
         }
 
         public void UpdateState()
@@ -193,21 +205,22 @@ namespace WildBlueIndustries
 
             //Are we at or exceeding max operating temp?
             if (this.part.temperature >= this.part.maxTemp * workingTempFactor)
+            {
+                currentThermalTransfer = 0f;
+                maxThermalTransfer = 0f;
                 return 0;
+            }
 
             //Once per time-tick, calculate max thermal transfer
             if (maxThermalTransfer < 0.001f)
                 maxThermalTransfer = (this.part.thermalMass * this.part.maxTemp * workingTempFactor) - (this.part.thermalMass * this.part.temperature);
 
             //If we can take the heat then add it to our bucket.
-            if (currentThermalTransfer + heatToTransfer <= maxThermalTransfer)
-            {
-                currentThermalTransfer += heatToTransfer;
-                return heatToTransfer;
-            }
+            if (currentThermalTransfer + heatToTransfer > maxThermalTransfer)
+                currentThermalTransfer = (currentThermalTransfer + heatToTransfer) - maxThermalTransfer;
+            currentThermalTransfer += heatToTransfer;
 
-            //No heat transferred
-            return 0;
+            return currentThermalTransfer;
         }
         #endregion
 

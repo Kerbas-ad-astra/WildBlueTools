@@ -51,10 +51,8 @@
     <Compile Include="ExtendedPartModule.cs" />
     <Compile Include="FixedUpdateHelper.cs" />
     <Compile Include="ModCategorizer.cs" />
-    <Compile Include="ModuleRadiator.cs" />
     <Compile Include="WBIAnimation.cs" />
     <Compile Include="WBIExtendedDecoupler.cs" />
-    <Compile Include="HeatManager.cs" />
     <Compile Include="WBIInflatablePartModule.cs" />
     <Compile Include="WBIMeshHelper.cs" />
     <Compile Include="WBIModuleSwitcher.cs" />

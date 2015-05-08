@@ -59,25 +59,32 @@ namespace WildBlueIndustries
             if (HighLogic.LoadedSceneIsFlight == false)
                 return;
 
-            //Get active vessel
-            if (FlightGlobals.ActiveVessel != activeVessel)
+            try
             {
-                activeVessel = FlightGlobals.ActiveVessel;
-                if (activeVessel == null)
-                    return;
+                //Get active vessel
+                if (FlightGlobals.ActiveVessel != activeVessel)
+                {
+                    activeVessel = FlightGlobals.ActiveVessel;
+                    if (activeVessel == null)
+                        return;
 
-                //If the part count has changed, such as when the vessel breaks up, docks, or undocks, then 
-                //find all the radiators and non-radiator parts and their target temperatures.
-                FindPartTemperatures();
+                    //If the part count has changed, such as when the vessel breaks up, docks, or undocks, then 
+                    //find all the radiators and non-radiator parts and their target temperatures.
+                    FindPartTemperatures();
+                }
+
+                //Now, manage the heat
+                ManageHeat();
+
+                //Since ModuleRadiator derives from ModuleDeployableSolarPanel, we don't get a fixed update to override.
+                //So we'll lend a hand here...
+                foreach (ModuleRadiator radiator in radiators)
+                    radiator.UpdateState();
             }
-
-            //Now, manage the heat
-            ManageHeat();
-
-            //Since ModuleRadiator derives from ModuleDeployableSolarPanel, we don't get a fixed update to override.
-            //So we'll lend a hand here...
-            foreach (ModuleRadiator radiator in radiators)
-                radiator.UpdateState();
+            catch (Exception ex)
+            {
+                Debug.Log("Heat Manager got an exception: " + ex);
+            }
         }
 
         public void FindPartTemperatures()
@@ -89,6 +96,7 @@ namespace WildBlueIndustries
                 partTargetTemps.Clear();
 
                 ModuleRadiator radiator;
+                ModuleTargetTemp moduleTargetTemp;
                 foreach (Part part in activeVessel.Parts)
                 {
                     //If the part has a radiator then add it to the radiator's list.
@@ -96,6 +104,7 @@ namespace WildBlueIndustries
                     if (radiator != null)
                     {
                         radiators.Add(radiator);
+                        radiator.radiatorDestroyedDelegate = RadiatorDestroyed;
                         continue;
                     }
 
@@ -109,9 +118,12 @@ namespace WildBlueIndustries
                     partTargetTemp.part = part;
 
                     //If the part has a ModuleTargetTemp then use its temperature
+                    moduleTargetTemp = part.FindModuleImplementing<ModuleTargetTemp>();
+                    if (moduleTargetTemp != null)
+                        partTargetTemp.targetTemp = moduleTargetTemp.targetTemperature;
 
                     //If the part is crewed then the target temperature is room temperature.
-                    if (part.CrewCapacity > 0)
+                    else if (part.CrewCapacity > 0)
                         partTargetTemp.targetTemp = kRoomTemperature;
 
                     //By default, the part will be kept at a percentage of its maximum temperature.
@@ -159,6 +171,13 @@ namespace WildBlueIndustries
                 if (partThermalTransfer > 0.001f)
                     partTargetTemp.part.AddThermalFlux(-partThermalTransfer);
             }
+        }
+
+        public void RadiatorDestroyed(ModuleRadiator doomed)
+        {
+            //Remove the doomed radiator
+            if (radiators.Contains(doomed))
+                radiators.Remove(doomed);
         }
 
     }
