@@ -507,8 +507,6 @@ namespace WildBlueIndustries
             base.OnSave(node);
             bool resourceNotFound = true;
 
-            node.AddValue("kasAmount", kasAmount.ToString());
-
             foreach (PartResource resource in _templateResources)
             {
                 //See if the resource node already exists.
@@ -677,8 +675,6 @@ namespace WildBlueIndustries
         {
             if (string.IsNullOrEmpty(_decalBasePath))
                 return;
-
-            Log("updateDecalsFromTemplate called");
             string value;
 
             value = nodeTemplate.GetValue("shortName");
@@ -779,7 +775,6 @@ namespace WildBlueIndustries
 
         protected override void getProtoNodeValues(ConfigNode protoNode)
         {
-            Log("getProtNodeValues called with node: " + protoNode.ToString());
             base.getProtoNodeValues(protoNode);
 
             ConfigNode[] overrideNodes = null;
@@ -881,7 +876,6 @@ namespace WildBlueIndustries
         
         protected void initTemplates()
         {
-            Log("initTemplates called with templateNodes: " + _templateNodes + " templateTypes: " + _templateTypes);
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
             if (templatesModel == null)
