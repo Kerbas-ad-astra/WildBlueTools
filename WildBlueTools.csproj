@@ -51,6 +51,7 @@
     <Compile Include="ExtendedPartModule.cs" />
     <Compile Include="FixedUpdateHelper.cs" />
     <Compile Include="ModCategorizer.cs" />
+    <Compile Include="WBModuleDockingNode.cs" />
     <Compile Include="WBIAnimation.cs" />
     <Compile Include="WBIExtendedDecoupler.cs" />
     <Compile Include="WBIInflatablePartModule.cs" />
@@ -63,9 +64,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="Window.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="TextFile1.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
