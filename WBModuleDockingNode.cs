@@ -20,6 +20,13 @@ namespace WildBlueIndustries
 {
     public class WBModuleDockingNode : ModuleDockingNode
     {
+        [KSPEvent(guiName = "Control from Here", guiActive = true)]
+        public void ControlFromHere()
+        {
+            MakeReferenceTransform();
+            TurnAnimationOn();
+        }
+
         [KSPEvent(guiName = "Set as Target", guiActiveUnfocused = true, externalToEVAOnly = false, guiActive = false, unfocusedRange = 200f)]
         public void SetNodeTarget()
         {
@@ -86,6 +93,7 @@ namespace WildBlueIndustries
             //Hide the native events
             Events["SetAsTarget"].guiActiveUnfocused = false;
             Events["UnsetTarget"].guiActiveUnfocused = false;
+            Events["MakeReferenceTransform"].guiActive = false;
         }
     }
 }
