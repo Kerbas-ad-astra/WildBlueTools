@@ -53,6 +53,26 @@ namespace WildBlueIndustries
 
             Log("Animation toggled new gui name: " + Events["ToggleAnimation"].guiName);
         }
+
+        public virtual void ToggleAnimation(bool deployed)
+        {
+            isDeployed = deployed;
+
+            //Play animation for current state
+            PlayAnimation(isDeployed);
+
+            if (isDeployed)
+                Events["ToggleAnimation"].guiName = endEventGUIName;
+            else
+                Events["ToggleAnimation"].guiName = startEventGUIName;
+        }
+
+        public virtual void showGui(bool isVisible)
+        {
+            Events["ToggleAnimation"].guiActive = isVisible;
+            Events["ToggleAnimation"].guiActiveEditor = isVisible;
+        }
+
         #endregion
 
         #region Overrides

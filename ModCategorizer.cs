@@ -20,6 +20,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public class ModFilter
+    {
+        public string modName;
+
+        public bool PartContainsModName(AvailablePart availablePart)
+        {
+            if (string.IsNullOrEmpty(availablePart.partUrl))
+            {
+                UrlDir.UrlConfig url = GameDatabase.Instance.GetConfigs("PART").FirstOrDefault(u => u.name.Replace('_', '.') == availablePart.name);
+                if (url == null)
+                    return false;
+
+                availablePart.partUrl = url.url;
+            }
+
+            if (availablePart.partUrl.Contains(modName))
+                return true;
+            else
+                return false;
+        }
+    }
+
     [KSPAddon(KSPAddon.Startup.MainMenu, true)]
     public class ModCategorizer : MonoBehaviour
     {
@@ -76,9 +98,12 @@ namespace WildBlueIndustries
                 if (selectedIcon == null || normalIcon == null)
                     continue;
 
+                ModFilter modFilter = new ModFilter();
+                modFilter.modName = folderName;
+
                 categoryIcon = new Icon(folderName + " icon", normalIcon, selectedIcon);
                 categoryFilter = PartCategorizer.Instance.filters.Find(f => f.button.categoryName == "Filter by Function");
-                PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => PartContainsValue(p, folderName));
+                PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.PartContainsModName(p));
 
                 categoryButton = categoryFilter.button.activeButton;
                 categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
