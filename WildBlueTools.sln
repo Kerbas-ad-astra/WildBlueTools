@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WildBlueTools", "WildBlueTools.csproj", "{CC0BDF1A-9641-4628-9F0F-3500DDC99534}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DSEVUtils", "..\DSEV\DSEVUtils\DSEVUtils.csproj", "{9A537D7D-39FB-486D-AFB2-16509AB9753D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{29BA1A12-365A-4E8E-9786-57772F0681DB} = {29BA1A12-365A-4E8E-9786-57772F0681DB}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoleUtils", "..\MOLE\MoleUtils\MoleUtils.csproj", "{0727F77B-B856-4D7D-8B2C-C1318B1EE46F}"
 EndProject

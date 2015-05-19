@@ -24,7 +24,7 @@ namespace WildBlueIndustries
     {
         public string modName;
 
-        public bool PartContainsModName(AvailablePart availablePart)
+        public bool IsPartInMod(AvailablePart availablePart)
         {
             if (string.IsNullOrEmpty(availablePart.partUrl))
             {
@@ -45,24 +45,6 @@ namespace WildBlueIndustries
     [KSPAddon(KSPAddon.Startup.MainMenu, true)]
     public class ModCategorizer : MonoBehaviour
     {
-
-        public bool PartContainsValue(AvailablePart availablePart, string value)
-        {
-            if (string.IsNullOrEmpty(availablePart.partUrl))
-            {
-                UrlDir.UrlConfig url = GameDatabase.Instance.GetConfigs("PART").FirstOrDefault(u => u.name.Replace('_', '.') == availablePart.name);
-                if (url == null)
-                    return false;
-
-                availablePart.partUrl = url.url;
-            }
-
-            if (availablePart.partUrl.Contains(value))
-                return true;
-            else
-                return false;
-        }
-
         private void AddFilterByMod()
         {
             ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes("MODCAT");
@@ -103,7 +85,7 @@ namespace WildBlueIndustries
 
                 categoryIcon = new Icon(folderName + " icon", normalIcon, selectedIcon);
                 categoryFilter = PartCategorizer.Instance.filters.Find(f => f.button.categoryName == "Filter by Function");
-                PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.PartContainsModName(p));
+                PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.IsPartInMod(p));
 
                 categoryButton = categoryFilter.button.activeButton;
                 categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);

@@ -589,6 +589,7 @@ namespace WildBlueIndustries
             PartModule kasContainer = null;
             string value;
             string templateType = nodeTemplate.GetValue("templateType");
+            float capacityModifier = capacityFactor;
 
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
             Log("template: " + nodeTemplate);
@@ -608,6 +609,19 @@ namespace WildBlueIndustries
             this.part.Resources.list.Clear();
             _templateResources.Clear();
 
+            //Set capacityModifier if there is an override for the template
+            value = nodeTemplate.GetValue("shortName");
+            if (parameterOverrides.ContainsKey(value))
+            {
+                ConfigNode templateOverride = parameterOverrides[value];
+                if (templateOverride != null)
+                {
+                    value = templateOverride.GetValue("capacityFactor");
+                    if (string.IsNullOrEmpty(value) == false)
+                        capacityModifier = float.Parse(value);
+                }
+            }
+
             //Add resources from template
             Log("template resource count: " + templateResourceNodes.Length);
             foreach (ConfigNode resourceNode in templateResourceNodes)
@@ -617,18 +631,18 @@ namespace WildBlueIndustries
 
                 //Apply the capacity factor
                 if (HighLogic.LoadedSceneIsEditor)
-                    resource.amount *= capacityFactor;
+                    resource.amount *= capacityModifier;
                 else
                     resource.amount = 0f;
 
                 //Some templates don't apply the capaictyFactor
                 //First, if we have no capacityFactorTypes entry, then apply the capacityFactor. This is for backwards compatibility.
                 if (string.IsNullOrEmpty(capacityFactorTypes))
-                    resource.maxAmount *= capacityFactor;
+                    resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
                 else if (capacityFactorTypes.Contains(templateType))
-                    resource.maxAmount *= capacityFactor;
+                    resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
                 if (isDeployed == false && isInflatable)
@@ -691,6 +705,8 @@ namespace WildBlueIndustries
 
                     if (!string.IsNullOrEmpty(value))
                         logoPanelName = value;
+                    else
+                        logoPanelName = nodeTemplate.GetValue("logoPanel");
                 }
                 else
                 {
@@ -704,6 +720,8 @@ namespace WildBlueIndustries
 
                     if (!string.IsNullOrEmpty(value))
                         glowPanelName = value;
+                    else
+                        glowPanelName = nodeTemplate.GetValue("glowPanel");
                 }
                 else
                 {
