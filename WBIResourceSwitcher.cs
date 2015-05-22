@@ -50,9 +50,6 @@ namespace WildBlueIndustries
         //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
         private string _defaultTemplate;
 
-        //Base location to the decals
-        private string _decalBasePath;
-
         //Base amount of KAS the part stores, if any.
         private int _baseKasAmount;
 
@@ -246,7 +243,7 @@ namespace WildBlueIndustries
         {
             try
             {
-                Log("RedecorateModule called. payForRedecoration: " + payForRedecoration.ToString() + " loadTemplateResources: " + loadTemplateResources.ToString());
+                Log("RedecorateModule called. payForRedecoration: " + payForRedecoration.ToString() + " loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
                 if (templatesModel == null)
                     return;
                 if (templatesModel.templateNodes == null)
@@ -586,7 +583,7 @@ namespace WildBlueIndustries
             PartResource resource = null;
             List<PartResource> resourceList = this.part.Resources.list;
             List<PartResource> savedResources = new List<PartResource>();
-            PartModule kasContainer = null;
+            // PartModule kasContainer = null;
             string value;
             string templateType = nodeTemplate.GetValue("templateType");
             float capacityModifier = capacityFactor;
@@ -664,6 +661,7 @@ namespace WildBlueIndustries
                 }
             }
 
+            /*
             //The KAS resource is handled differently. We need to first find the KASModuleContainer
             kasContainer = this.part.Modules["KASModuleContainer"];
             if (kasContainer == null)
@@ -683,12 +681,11 @@ namespace WildBlueIndustries
                 Utils.SetField("maxSize", 1, kasContainer);
             else
                 Utils.SetField("maxSize", kasAmount, kasContainer);
+             */
         }
 
         protected void updateDecalsFromTemplate(ConfigNode nodeTemplate)
         {
-            if (string.IsNullOrEmpty(_decalBasePath))
-                return;
             string value;
 
             value = nodeTemplate.GetValue("shortName");
@@ -757,11 +754,6 @@ namespace WildBlueIndustries
                 Log("transformNames are null");
                 return;
             }
-            if (string.IsNullOrEmpty(_decalBasePath))
-            {
-                Log("decalBasePath is null");
-                return;
-            }
 
             //Go through all the named panels and find their transforms.
             //Then replace their textures.
@@ -780,11 +772,11 @@ namespace WildBlueIndustries
                 {
                     rendererMaterial = target.GetComponent<Renderer>();
 
-                    textureForDecal = GameDatabase.Instance.GetTexture(_decalBasePath + "/" + logoPanelName, false);
+                    textureForDecal = GameDatabase.Instance.GetTexture(logoPanelName, false);
                     if (textureForDecal != null)
                         rendererMaterial.material.SetTexture(MAIN_TEXTURE, textureForDecal);
 
-                    textureForDecal = GameDatabase.Instance.GetTexture(_decalBasePath + "/" + glowPanelName, false);
+                    textureForDecal = GameDatabase.Instance.GetTexture(glowPanelName, false);
                     if (textureForDecal != null)
                         rendererMaterial.material.SetTexture(EMISSIVE_TEXTURE, textureForDecal);
                 }
@@ -823,9 +815,6 @@ namespace WildBlueIndustries
             //Get the list of resources that may be replaced when switching templates
             //If empty, then all of the part's resources will be cleared during a template switch.
             _resourcesToReplace = protoNode.GetValue("resourcesToReplace");
-
-            //Location to the decals
-            _decalBasePath = protoNode.GetValue("decalBasePath");
 
             value = protoNode.GetValue("confirmResourceSwitch");
             if (string.IsNullOrEmpty(value) == false)
@@ -894,6 +883,7 @@ namespace WildBlueIndustries
         
         protected void initTemplates()
         {
+            Log("initTemplates called");
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
             if (templatesModel == null)
@@ -914,6 +904,11 @@ namespace WildBlueIndustries
 
             //Set current template index
             CurrentTemplateIndex = templatesModel.FindIndexOfTemplate(shortName);
+            if (CurrentTemplateIndex == -1)
+            {
+                CurrentTemplateIndex = 0;
+                shortName = templatesModel[CurrentTemplateIndex].GetValue("shortName");
+            }
         }
         #endregion
 

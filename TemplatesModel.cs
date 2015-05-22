@@ -23,9 +23,6 @@ namespace WildBlueIndustries
     {
         TemplateIsValid,
         TechNotUnlocked,
-        NoFactory,
-        NotEnoughParts,
-        ModuleHasCrew,
         InvalidIndex,
         RequiredModuleNotFound,
         NoTemplates
@@ -88,6 +85,12 @@ namespace WildBlueIndustries
                 //Done
                 this.templateNodes = templates.ToArray();
                 Log(_templateNodeName + " has " + templates.Count + " templates.");
+                ConfigNode node;
+                for (int index = 0; index < this.templateNodes.Length; index++)
+                {
+                    node = this.templateNodes[index];
+                    Log("Template " + index + ": " + node.GetValue("shortName"));
+                }
             }
         }
 
