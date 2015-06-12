@@ -43,13 +43,13 @@ namespace WildBlueIndustries
         {
             int nextIndex = selectedObject;
 
-            nextIndex = (nextIndex + 1) % this.objectTransforms.Count;
+            nextIndex = (nextIndex + 1) % this.objectNames.Count;
 
             setObject(nextIndex);
 
             if (objectNames.Count > 0)
             {
-                nextIndex = (nextIndex + 1) % this.objectTransforms.Count;
+                nextIndex = (nextIndex + 1) % this.objectNames.Count;
                 Events["NextMesh"].guiName = objectNames[nextIndex];
             }
 
@@ -60,13 +60,13 @@ namespace WildBlueIndustries
         {
             int nextIndex = selectedObject;
 
-            nextIndex = (nextIndex - 1) % this.objectTransforms.Count;
+            nextIndex = (nextIndex - 1) % this.objectNames.Count;
 
             setObject(nextIndex);
 
             if (objectNames.Count > 0)
             {
-                nextIndex = (nextIndex - 1) % this.objectTransforms.Count;
+                nextIndex = (nextIndex - 1) % this.objectNames.Count;
                 Events["NextMesh"].guiName = objectNames[nextIndex];
             }
         }

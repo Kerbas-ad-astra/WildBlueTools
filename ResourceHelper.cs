@@ -48,9 +48,9 @@ namespace WildBlueIndustries
             foreach (PartResource resource in resources)
             {
                 //Find definition
-                resourceDef = definitions[resource.name];
+                resourceDef = definitions[resource.resourceName];
                 if (resourceDef != null)
-                    totalCost += (float)(resourceDef.unitCost * resource.amount);
+                    totalCost += (float)(resourceDef.unitCost * resource.maxAmount);
 
             }
 

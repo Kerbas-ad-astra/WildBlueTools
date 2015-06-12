@@ -50,7 +50,13 @@
   <ItemGroup>
     <Compile Include="ExtendedPartModule.cs" />
     <Compile Include="FixedUpdateHelper.cs" />
+    <Compile Include="InfoView.cs" />
     <Compile Include="ModCategorizer.cs" />
+    <Compile Include="WBIMeshToggle.cs" />
+    <Compile Include="WBIMultiConverter.cs" />
+    <Compile Include="MultiConverterModel.cs" />
+    <Compile Include="OpsView.cs" />
+    <Compile Include="WBILight.cs" />
     <Compile Include="WBModuleDockingNode.cs" />
     <Compile Include="WBIAnimation.cs" />
     <Compile Include="WBIExtendedDecoupler.cs" />

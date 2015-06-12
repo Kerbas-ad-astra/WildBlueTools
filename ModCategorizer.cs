@@ -26,6 +26,8 @@ namespace WildBlueIndustries
 
         public bool IsPartInMod(AvailablePart availablePart)
         {
+            string[] folderNames = modName.Split(new char[] { ';' });
+
             if (string.IsNullOrEmpty(availablePart.partUrl))
             {
                 UrlDir.UrlConfig url = GameDatabase.Instance.GetConfigs("PART").FirstOrDefault(u => u.name.Replace('_', '.') == availablePart.name);
@@ -35,10 +37,11 @@ namespace WildBlueIndustries
                 availablePart.partUrl = url.url;
             }
 
-            if (availablePart.partUrl.Contains(modName))
-                return true;
-            else
-                return false;
+            foreach (string folderName in folderNames)
+                if (availablePart.partUrl.Contains(folderName))
+                    return true;
+
+            return false;
         }
     }
 

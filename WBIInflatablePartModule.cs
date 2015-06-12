@@ -21,6 +21,9 @@ namespace WildBlueIndustries
     public class WBIInflatablePartModule : ExtendedPartModule
     {
         [KSPField(isPersistant = true)]
+        public bool flightAnimationOnly;
+
+        [KSPField(isPersistant = true)]
         public string animationName;
 
         [KSPField(isPersistant = true)]
@@ -35,8 +38,8 @@ namespace WildBlueIndustries
         public int inflatedCrewCapacity = 0;
 
         #region User Events & API
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleAnimation", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
-        public virtual void ToggleAnimation()
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleInflation", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
+        public virtual void ToggleInflation()
         {
             //If the module is inflatable, deployed, and has kerbals inside, then don't allow the module to be deflated.
             if (isInflatable && isDeployed && this.part.protoModuleCrew.Count() > 0)
@@ -53,15 +56,15 @@ namespace WildBlueIndustries
             if (isDeployed)
             {
                 this.part.CrewCapacity = inflatedCrewCapacity;
-                Events["ToggleAnimation"].guiName = endEventGUIName;
+                Events["ToggleInflation"].guiName = endEventGUIName;
             }
             else
             {
                 this.part.CrewCapacity = 0;
-                Events["ToggleAnimation"].guiName = startEventGUIName;
+                Events["ToggleInflation"].guiName = startEventGUIName;
             }
 
-            Log("Animation toggled new gui name: " + Events["ToggleAnimation"].guiName);
+            Log("Animation toggled new gui name: " + Events["ToggleInflation"].guiName);
         }
         #endregion
 
@@ -123,7 +126,7 @@ namespace WildBlueIndustries
             if (string.IsNullOrEmpty(value) == false)
             {
                 inflatedCrewCapacity = int.Parse(value);
-                if (isInflatable && isDeployed)
+                if (isInflatable && isDeployed && HighLogic.LoadedSceneIsFlight)
                     this.part.CrewCapacity = inflatedCrewCapacity;
             }
         }
@@ -133,6 +136,9 @@ namespace WildBlueIndustries
             base.OnStart(state);
 
             SetupAnimations();
+
+            if (flightAnimationOnly)
+                Events["ToggleInflation"].guiActiveEditor = false;
         }
         #endregion
 
@@ -155,29 +161,31 @@ namespace WildBlueIndustries
                     return;
 
                 //Set layer
-                anim[animationName].layer = 2;
+                anim[animationName].layer = 1;
 
                 //Set toggle button
-                Events["ToggleAnimation"].guiActive = true;
-                Events["ToggleAnimation"].guiActiveEditor = true;
+                Events["ToggleInflation"].guiActive = true;
+                Events["ToggleInflation"].guiActiveEditor = true;
 
                 if (isDeployed)
                 {
-                    Events["ToggleAnimation"].guiName = endEventGUIName;
+                    Events["ToggleInflation"].guiName = endEventGUIName;
 
                     //Make sure the inflatable module is fully deployed.
                     anim[animationName].normalizedTime = 1.0f;
                     anim[animationName].speed = 10000f;
-                    this.part.CrewCapacity = inflatedCrewCapacity;
+                    if (HighLogic.LoadedSceneIsFlight)
+                        this.part.CrewCapacity = inflatedCrewCapacity;
                 }
                 else
                 {
-                    Events["ToggleAnimation"].guiName = startEventGUIName;
+                    Events["ToggleInflation"].guiName = startEventGUIName;
 
                     //Make sure the inflatable module is fully retracted.
                     anim[animationName].normalizedTime = 0f;
                     anim[animationName].speed = -10000f;
-                    this.part.CrewCapacity = 0;
+                    if (HighLogic.LoadedSceneIsFlight)
+                        this.part.CrewCapacity = 0;
                 }
                 anim.Play(animationName);
             }
@@ -185,8 +193,8 @@ namespace WildBlueIndustries
             //Hide toggle button
             else
             {
-                Events["ToggleAnimation"].guiActive = false;
-                Events["ToggleAnimation"].guiActiveEditor = false;
+                Events["ToggleInflation"].guiActive = false;
+                Events["ToggleInflation"].guiActiveEditor = false;
             }
         }
 

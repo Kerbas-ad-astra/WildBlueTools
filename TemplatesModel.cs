@@ -63,23 +63,25 @@ namespace WildBlueIndustries
             {
                 _templateNodeName = value;
                 List<ConfigNode> templates = new List<ConfigNode>();
-                ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes(_templateNodeName);
+                string[] potentialTemplates = _templateNodeName.Split(new char[] { ';' });
+                ConfigNode[] templateConfigs = GameDatabase.Instance.GetConfigNodes(_templateNodeName);
                 string needs;
 
-                if (nodes == null)
+                foreach (string potentialTemplate in potentialTemplates)
                 {
-                    Log("nodeTemplatesModel templateNodes == null!");
-                    return;
-                }
+                    templateConfigs = GameDatabase.Instance.GetConfigNodes(potentialTemplate);
+                    if (templateConfigs == null)
+                        continue;
 
-                //Check to see if the template needs a specific mod
-                foreach (ConfigNode nodeTemplate in nodes)
-                {
-                    needs = nodeTemplate.GetValue("needs");
-                    if (needs == null)
-                        templates.Add(nodeTemplate);
-                    else if (TemplatesModel.CheckNeeds(needs) == EInvalidTemplateReasons.TemplateIsValid)
-                        templates.Add(nodeTemplate);
+                    //Check to see if the template needs a specific mod
+                    foreach (ConfigNode config in templateConfigs)
+                    {
+                        needs = config.GetValue("needs");
+                        if (needs == null)
+                            templates.Add(config);
+                        else if (TemplatesModel.CheckNeeds(needs) == EInvalidTemplateReasons.TemplateIsValid)
+                            templates.Add(config);
+                    }
                 }
 
                 //Done

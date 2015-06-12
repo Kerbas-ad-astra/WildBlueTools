@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCMUtils", "..\MCM\MCMUtils
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cooldown", "..\Cooldown\Cooldown.csproj", "{29BA1A12-365A-4E8E-9786-57772F0681DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pathfinder", "..\Pathfinder\Pathfinder\Pathfinder.csproj", "{AD41263E-2A61-4916-9D63-7101EA917811}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{29BA1A12-365A-4E8E-9786-57772F0681DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29BA1A12-365A-4E8E-9786-57772F0681DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29BA1A12-365A-4E8E-9786-57772F0681DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD41263E-2A61-4916-9D63-7101EA917811}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD41263E-2A61-4916-9D63-7101EA917811}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD41263E-2A61-4916-9D63-7101EA917811}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD41263E-2A61-4916-9D63-7101EA917811}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

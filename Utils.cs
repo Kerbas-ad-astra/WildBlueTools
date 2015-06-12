@@ -24,6 +24,43 @@ namespace WildBlueIndustries
         public const float CelsiusToKelvin = 272.15f;
         public const float StefanBoltzmann = 5.67e-8f;
 
+        public static bool IsBiomeUnlocked(Vessel vessel)
+        {
+            //ResourceMap.Instance.IsBiomeUnlocked is borked. Need to use an alternate method...
+            CBAttributeMapSO.MapAttribute biome = Utils.GetCurrentBiome(vessel);
+            List<BiomeLockData> biomeLockData = ResourceScenario.Instance.gameSettings.GetBiomeLockInfo();
+
+            foreach (BiomeLockData data in biomeLockData)
+                if (data.BiomeName == biome.name)
+                    return true;
+
+            return false;
+        }
+
+        public static CBAttributeMapSO.MapAttribute GetCurrentBiome(Vessel vessel)
+        {
+            CelestialBody celestialBody = vessel.mainBody;
+            double lattitude = ResourceUtilities.Deg2Rad(vessel.latitude);
+            double longitude = ResourceUtilities.Deg2Rad(vessel.longitude);
+            CBAttributeMapSO.MapAttribute biome = ResourceUtilities.GetBiome(lattitude, longitude, FlightGlobals.currentMainBody);
+
+            return biome;
+        }
+
+        public static bool HasResearchedNode(string techNode)
+        {
+            if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER | HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX)
+            {
+                if (ResearchAndDevelopment.Instance != null)
+                {
+                    if (ResearchAndDevelopment.GetTechnologyState(techNode) != RDTech.State.Available)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         public static void showOnlyEmittersInList(Part part, List<string> emittersToShow)
         {
             KSPParticleEmitter[] emitters = part.GetComponentsInChildren<KSPParticleEmitter>();

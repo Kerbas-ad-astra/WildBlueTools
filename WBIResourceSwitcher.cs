@@ -18,10 +18,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public class WBIResourceSwitcher : WBIInflatablePartModule
+    public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier
     {
         private static string MAIN_TEXTURE = "_MainTex";
         private static string EMISSIVE_TEXTURE = "_Emissive";
+
+        [KSPField(isPersistant = true)]
+        public int currentVolume;
 
         //Index of the current module template we're using.
         public int CurrentTemplateIndex;
@@ -50,8 +53,15 @@ namespace WildBlueIndustries
         //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
         private string _defaultTemplate;
 
-        //Base amount of KAS the part stores, if any.
-        private int _baseKasAmount;
+        //Base amount of volume the part stores, if any.
+        [KSPField(isPersistant = true)]
+        public int baseStorage;
+
+        [KSPField(isPersistant = true)]
+        public int maxStorage;
+
+        [KSPField(isPersistant = true)]
+        public bool decalsVisible;
 
         //Since not all storage containers are equal, the
         //capacityFactor is used to determine how much of the template's base resource amount
@@ -62,7 +72,6 @@ namespace WildBlueIndustries
         //Helper objects
         protected string techRequiredToReconfigure;
         protected string capacityFactorTypes;
-        protected int kasAmount;
         protected bool confirmResourceSwitch = false;
         protected bool deflateConfirmed = false;
         protected TemplatesModel templatesModel;
@@ -79,6 +88,26 @@ namespace WildBlueIndustries
         #endregion
 
         #region User Events & API
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Decals")]
+        public void ToggleDecals()
+        {
+            WBIResourceSwitcher switcher;
+
+            decalsVisible = !decalsVisible;
+
+            ShowDecals(decalsVisible);
+
+            //Handle symmetrical parts
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                foreach (Part symmetryPart in this.part.symmetryCounterparts)
+                {
+                    switcher = symmetryPart.GetComponent<WBIResourceSwitcher>();
+                    switcher.ShowDecals(decalsVisible);
+                }
+            }
+        }
+
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "Next Type", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
         public void NextType()
         {
@@ -290,23 +319,17 @@ namespace WildBlueIndustries
             }
         }
 
-        /*
-        float IPartMassModifier.GetModuleMass(float defaultMass)
+        public float GetModuleCost()
         {
-            List<PartResource> resourceList = this.part.Resources.list;
-            float resourceMass = ResourceHelper.GetResourceMass(this.part);
-
-            return defaultMass + resourceMass;
-        }
-
-        float IPartCostModifier.GetModuleCost(float defaultCost)
-        {
-            List<PartResource> resourceList = this.part.Resources.list;
             float resourceCost = ResourceHelper.GetResourceCost(this.part);
 
-            return defaultCost + resourceCost;
+            return resourceCost;
         }
-        */
+
+        public float GetModuleCost(float modifier)
+        {
+            return GetModuleCost();
+        }
 
         #endregion
 
@@ -316,19 +339,19 @@ namespace WildBlueIndustries
             return "Check the tweakables menu for the different resources that the tank can hold.";
         }
 
-        public override void ToggleAnimation()
+        public override void ToggleInflation()
         {
-            Log("ToggleAnimation called.");
+            Log("ToggleInflation called.");
             List<PartResource> resourceList = this.part.Resources.list;
-            PartModule kasContainer = this.part.Modules["KASModuleContainer"];
+            PartModule inventory = this.part.Modules["ModuleKISInventory"];
 
             //If the module cannot be deflated then exit.
             if (CanBeDeflated() == false)
             {
-                Log("ToggleAnimation: Not deflating module.");
+                Log("ToggleInflation: Not deflating module.");
                 return;
             }
-            base.ToggleAnimation();
+            base.ToggleInflation();
             deflateConfirmed = false;
 
             //If the module is now inflated, re-add the max resource amounts to the list of resources.
@@ -354,13 +377,27 @@ namespace WildBlueIndustries
                 }
             }
 
-            //KAS container
-            if (kasContainer != null)
+            //KIS container
+            if (inventory != null)
             {
                 if (isDeployed)
-                    Utils.SetField("maxSize", kasAmount, kasContainer);
+                {
+                    //Check to see if the current template is a KIS template. If not then set KIS amount to the base amount.
+                    string value = CurrentTemplate.GetValue("isKISInventory");
+                    bool isKISInventory = false;
+                    if (string.IsNullOrEmpty(value) == false)
+                        isKISInventory = bool.Parse(value);
+                    if (isKISInventory)
+                        currentVolume = maxStorage;
+                    else
+                        currentVolume = baseStorage;
+
+                    Utils.SetField("maxVolume", currentVolume, inventory);
+                }
                 else
-                    Utils.SetField("maxSize", 1, kasContainer);
+                {
+                    Utils.SetField("maxVolume", 1, inventory);
+                }
             }
         }
 
@@ -426,7 +463,6 @@ namespace WildBlueIndustries
             string resourceName;
             string protoNodeKey;
             string myPartName = getMyPartName();
-            string value;
             ConfigNode protoNode = null;
 
             base.OnLoad(node);
@@ -446,17 +482,7 @@ namespace WildBlueIndustries
 
                 //Also get template types
                 _templateTypes = protoNode.GetValue("templateTypes");
-
-                //Base KAS amounts
-                value = protoNode.GetValue("baseKasAmount");
-                if (string.IsNullOrEmpty(value) == false)
-                    _baseKasAmount = int.Parse(value);
             }
-
-            //Current KAS amount
-            value = node.GetValue("kasAmount");
-            if (string.IsNullOrEmpty(value) == false)
-                kasAmount = int.Parse(value);
 
             //Create the templatesModel
             templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), _templateNodes, _templateTypes);
@@ -573,6 +599,8 @@ namespace WildBlueIndustries
 
             //Init the module GUI
             initModuleGUI();
+
+            ShowDecals(decalsVisible);
         }
 
         #endregion
@@ -583,7 +611,6 @@ namespace WildBlueIndustries
             PartResource resource = null;
             List<PartResource> resourceList = this.part.Resources.list;
             List<PartResource> savedResources = new List<PartResource>();
-            // PartModule kasContainer = null;
             string value;
             string templateType = nodeTemplate.GetValue("templateType");
             float capacityModifier = capacityFactor;
@@ -661,27 +688,31 @@ namespace WildBlueIndustries
                 }
             }
 
-            /*
-            //The KAS resource is handled differently. We need to first find the KASModuleContainer
-            kasContainer = this.part.Modules["KASModuleContainer"];
-            if (kasContainer == null)
+            //KIS templates work differently. We have to know the part's base and max volume.
+            //Base volume represents how much can be stored when not using a KIS template.
+            //Max volume represents how much can be stored when the part is configured as a KIS storage container.
+            //First, do we even have an inventory?
+            if (this.part.Modules.Contains("ModuleKISInventory") == false)
                 return;
+            PartModule inventory = this.part.Modules["ModuleKISInventory"];
 
-            //Ok, we have a KAS container. Now see if the template has an override for the KAS amount
-            value = nodeTemplate.GetValue("kasAmount");
-            if (string.IsNullOrEmpty(value) == false)
-                kasAmount = (int)(float.Parse(value) * capacityFactor);
+            //Ok, is the template a KIS template?
+            //If not, then just set the volume to the base amount.
+            if (string.IsNullOrEmpty(nodeTemplate.GetValue("isKISInventory")))
+            {
+                //If we are an inflatable module and inflated, set the base amount. Otherwise, set it to 1
+                if (isInflatable && isDeployed == false)
+                    Utils.SetField("maxVolume", 1, inventory);
+                else
+                    Utils.SetField("maxVolume", baseStorage, inventory);
+                return;
+            }
 
-            //Use the default
-            else
-                kasAmount = _baseKasAmount;
-
-            //If we are an inflatable module and inflated, set the KAS amount. Otherwise, set it to 1
+            //If we are an inflatable module and inflated, set the max amount. Otherwise, set it to 1
             if (isInflatable && isDeployed == false)
-                Utils.SetField("maxSize", 1, kasContainer);
+                Utils.SetField("maxVolume", 1, inventory);
             else
-                Utils.SetField("maxSize", kasAmount, kasContainer);
-             */
+                Utils.SetField("maxVolume", maxStorage, inventory);
         }
 
         protected void updateDecalsFromTemplate(ConfigNode nodeTemplate)
@@ -730,6 +761,39 @@ namespace WildBlueIndustries
             }
             else
                 Log("shortName is null");
+        }
+
+        public void ShowDecals(bool isVisible)
+        {
+            char[] delimiters = { ',' };
+            string[] transformNames = _logoPanelTransforms.Replace(" ", "").Split(delimiters);
+            Transform[] targets;
+
+            //Sanity checks
+            if (transformNames == null)
+            {
+                Log("transformNames are null");
+                return;
+            }
+
+            //Go through all the named panels and find their transforms.
+            foreach (string transformName in transformNames)
+            {
+                //Get the targets
+                targets = part.FindModelTransforms(transformName);
+                if (targets == null)
+                {
+                    Log("No targets found for " + transformName);
+                    continue;
+                }
+
+                foreach (Transform target in targets)
+                {
+                    target.gameObject.SetActive(isVisible);
+                    if (target.gameObject.collider != null)
+                        target.gameObject.collider.enabled = isVisible;
+                }
+            }
         }
 
         protected void changeDecals()
@@ -908,6 +972,17 @@ namespace WildBlueIndustries
             {
                 CurrentTemplateIndex = 0;
                 shortName = templatesModel[CurrentTemplateIndex].GetValue("shortName");
+            }
+
+            //If we have only one template then hide the next/prev buttons
+            if (templatesModel.templateNodes.Count<ConfigNode>() == 1)
+            {
+                Events["NextType"].guiActive = false;
+                Events["NextType"].guiActiveEditor = false;
+                Events["NextType"].guiActiveUnfocused = false;
+                Events["PrevType"].guiActive = false;
+                Events["PrevType"].guiActiveEditor = false;
+                Events["PrevType"].guiActiveUnfocused = false;
             }
         }
         #endregion
