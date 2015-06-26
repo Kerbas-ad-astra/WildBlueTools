@@ -175,6 +175,16 @@ namespace WildBlueIndustries
             return amountAcquired;
         }
 
+        public static PartResourceDefinition DefinitionForResource(string resourceName)
+        {
+            PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;
+
+            if (definitions.Contains(resourceName))
+                return definitions[resourceName];
+
+            return null;
+        }
+
         public static bool VesselHasResource(string resourceName, Vessel vessel)
         {
             PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;

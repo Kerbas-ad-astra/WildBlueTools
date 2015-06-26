@@ -31,6 +31,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public string hideMeshesName;
 
+        [KSPField(isPersistant = true)]
+        public bool guiVisible;
+
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "Toggle Meshes")]
         public void ToggleMeshes()
         {
@@ -48,7 +51,7 @@ namespace WildBlueIndustries
         }
 
         protected void updateGui()
-        {
+        {            
             if (meshesVisible)
             {
                 showAll();
@@ -59,6 +62,10 @@ namespace WildBlueIndustries
                 hideAll();
                 Events["ToggleMeshes"].guiName = showMeshesName;
             }
+
+            Events["ToggleMeshes"].guiActive = guiVisible;
+            Events["ToggleMeshes"].guiActiveEditor = guiVisible;
+            Events["ToggleMeshes"].guiActiveUnfocused = guiVisible;
         }
     }
 }

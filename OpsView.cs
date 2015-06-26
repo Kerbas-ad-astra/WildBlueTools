@@ -32,10 +32,11 @@ namespace WildBlueIndustries
         public List<ModuleResourceConverter> converters = null;
         public Part part;
         public PartResourceList resources;
-        public bool canBeReconfigured;
+        public bool techResearched;
         public string nextName;
         public string prevName;
         public string previewName;
+        public string cost;
         public NextModule nextModuleDelegate = null;
         public PrevModule prevModuleDelegate = null;
         public NextPreviewModule nextPreviewDelegate = null;
@@ -55,7 +56,7 @@ namespace WildBlueIndustries
         public Texture moduleLabel;
 
         public OpsView() :
-        base("Multiconverter Operations Manager (MOM)", 600, 300)
+        base("Multiconverter Operations Manager (MOM)", 600, 330)
         {
             Resizable = false;
             _scrollPosConverters = new Vector2(0, 0);
@@ -177,7 +178,7 @@ namespace WildBlueIndustries
         protected void drawPreviewGUI()
         {
             //Only allow reconfiguring of the module if it allows field reconfiguration.
-            if (canBeReconfigured == false)
+            if (techResearched == false)
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("This module cannot be reconfigured. Research more technology.");
@@ -187,28 +188,38 @@ namespace WildBlueIndustries
 
             string moduleInfo;
 
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
             GUILayout.Label("Current Preview: " + previewName);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            GUILayout.Label("Reconfiguration Cost: " + cost + " RocketParts");
 
             //Make sure we have something to display
             if (string.IsNullOrEmpty(previewName))
                 previewName = nextName;
 
-            //Next preview button
-            if (GUILayout.Button("Next: " + nextName))
+            if (converters.Count > 2)
             {
-                if (nextPreviewDelegate != null)
-                    nextPreviewDelegate(previewName);
+                //Next preview button
+                if (GUILayout.Button("Next: " + nextName))
+                {
+                    if (nextPreviewDelegate != null)
+                        nextPreviewDelegate(previewName);
+                }
+
+                //Prev preview button
+                if (GUILayout.Button("Prev: " + prevName))
+                {
+                    if (prevPreviewDelegate != null)
+                        prevPreviewDelegate(previewName);
+                }
             }
 
-            //Prev preview button
-            if (GUILayout.Button("Prev: " + prevName))
+            else
             {
-                if (prevPreviewDelegate != null)
-                    prevPreviewDelegate(previewName);
+                //Next preview button
+                if (GUILayout.Button("Next: " + nextName))
+                {
+                    if (nextPreviewDelegate != null)
+                        nextPreviewDelegate(previewName);
+                }
             }
 
             //More info button
@@ -277,6 +288,10 @@ namespace WildBlueIndustries
 
                 GUILayout.EndVertical();
             }
+
+            if (converters.Count == 0)
+                GUILayout.Label("No processors are present in this configuration.");
+
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
         }

@@ -33,6 +33,7 @@ namespace WildBlueIndustries
         public string endEventGUIName;
 
         //Helper objects
+        public bool animationStarted = false;
         public bool isDeployed = false;
         public bool isInflatable = false;
         public int inflatedCrewCapacity = 0;
@@ -49,6 +50,7 @@ namespace WildBlueIndustries
             }
 
             //Play animation for current state
+            animationStarted = true;
             PlayAnimation(isDeployed);
             
             //Toggle state
