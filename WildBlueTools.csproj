@@ -52,6 +52,7 @@
     <Compile Include="FixedUpdateHelper.cs" />
     <Compile Include="InfoView.cs" />
     <Compile Include="ModCategorizer.cs" />
+    <Compile Include="WBIBasicScienceLab.cs" />
     <Compile Include="WBIMeshToggle.cs" />
     <Compile Include="WBIMultiConverter.cs" />
     <Compile Include="MultiConverterModel.cs" />
