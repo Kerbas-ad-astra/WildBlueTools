@@ -74,6 +74,8 @@ namespace WildBlueIndustries
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
+            parseObjectNames();
+            setObject(selectedObject);
         }
 
         public override void OnSave(ConfigNode node)
@@ -114,13 +116,17 @@ namespace WildBlueIndustries
             if (string.IsNullOrEmpty(value) == false)
                 editorOnly = bool.Parse(value);
 
+            objects = protoNode.GetValue("objects");
             guiNames = protoNode.GetValue("guiNames");
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                parseObjectNames();
+                setObject(selectedObject);
+            }
         }
 
         public override void OnStart(StartState state)
         {
-            parseObjectNames();
-            setObject(selectedObject);
             base.OnStart(state);
 
             this.part.OnEditorAttach += OnEditorAttach;
@@ -151,16 +157,20 @@ namespace WildBlueIndustries
             string[] elements;
             string[] objectBatchNames = objects.Split(';');
 
+            objectTransforms.Clear();
+            objectNames.Clear();
+            meshIndexes.Clear();
+
             if (objectBatchNames.Length >= 1)
             {
                 objectTransforms.Clear();
                 for (int batchCount = 0; batchCount < objectBatchNames.Length; batchCount++)
                 {
                     List<Transform> newObjects = new List<Transform>();
-                    string[] objectNames = objectBatchNames[batchCount].Split(',');
-                    for (int objectCount = 0; objectCount < objectNames.Length; objectCount++)
+                    string[] namedObjects = objectBatchNames[batchCount].Split(',');
+                    for (int objectCount = 0; objectCount < namedObjects.Length; objectCount++)
                     {
-                        Transform newTransform = part.FindModelTransform(objectNames[objectCount].Trim(' '));
+                        Transform newTransform = part.FindModelTransform(namedObjects[objectCount].Trim(' '));
                         if (newTransform != null)
                         {
                             newObjects.Add(newTransform);

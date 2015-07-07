@@ -245,6 +245,7 @@ namespace WildBlueIndustries
                     //Can we afford it?
                     if (resource == null || resource.amount < partCost)
                     {
+                        notEnoughParts();
                         string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} RocketParts to assemble.", partCost);
                         ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                         return;
@@ -276,6 +277,10 @@ namespace WildBlueIndustries
             }
 
             base.ToggleInflation();
+        }
+
+        protected virtual void notEnoughParts()
+        {
         }
 
         public override void OnLoad(ConfigNode node)
@@ -346,7 +351,7 @@ namespace WildBlueIndustries
             return true;
         }
 
-        protected bool hasSufficientSkill(string templateName)
+        protected virtual bool hasSufficientSkill(string templateName)
         {
             string skillRequired = templatesModel[templateName].GetValue("reconfigureSkill");
 
@@ -430,7 +435,7 @@ namespace WildBlueIndustries
             return kRecycleBase + _reconfigureCostModifier;
         }
 
-        protected bool canAffordReconfigure(string templateName)
+        protected virtual bool canAffordReconfigure(string templateName)
         {
             string value;
 
