@@ -40,9 +40,9 @@ namespace WildBlueIndustries
         //These names come from the model itself.
         private string _logoPanelTransforms;
 
-        //List of resources that we are allowed to clear when performing a template switch.
-        //If set to ALL, then all of the part's resources will be cleared.
-        private string _resourcesToReplace = "ALL";
+        //List of resources that we must keep when performing a template switch.
+        //If set to NONE, then all of the part's resources will be cleared.
+        private string _resourcesToKeep = "NONE";
 
         //Name of the template nodes.
         private string _templateNodes;
@@ -609,8 +609,6 @@ namespace WildBlueIndustries
         public virtual void loadResourcesFromTemplate(ConfigNode nodeTemplate)
         {
             PartResource resource = null;
-            List<PartResource> resourceList = this.part.Resources.list;
-            List<PartResource> savedResources = new List<PartResource>();
             string value;
             string templateType = nodeTemplate.GetValue("templateType");
             float capacityModifier = capacityFactor;
@@ -626,11 +624,17 @@ namespace WildBlueIndustries
             }
 
             //Clear the list
-            //Much quicker than removing individual resources...
             PartResource[] partResources = this.part.GetComponents<PartResource>();
-            foreach (PartResource doomed in partResources)
+            List<PartResource> doomedResources = new List<PartResource>();
+            foreach (PartResource res in partResources)
+                if (_resourcesToKeep.Contains(res.resourceName) == false)
+                    doomedResources.Add(res);
+
+            foreach (PartResource doomed in doomedResources)
+            {
                 DestroyImmediate(doomed);
-            this.part.Resources.list.Clear();
+                this.part.Resources.list.Remove(doomed);
+            }
             _templateResources.Clear();
 
             //Set capacityModifier if there is an override for the template
@@ -650,6 +654,12 @@ namespace WildBlueIndustries
             Log("template resource count: " + templateResourceNodes.Length);
             foreach (ConfigNode resourceNode in templateResourceNodes)
             {
+                //If we kept the resource, then skip this template resource.
+                //We won't know what the original values were if we merged values.
+                value = resourceNode.GetValue("name");
+                if (this.part.Resources.Contains(value))
+                    continue;
+
                 resource = this.part.AddResource(resourceNode);
                 Log("Added resource: " + resource.resourceName);
 
@@ -676,16 +686,6 @@ namespace WildBlueIndustries
                 }
 
                 _templateResources.Add(resource);
-            }
-
-            //Put back the resources that aren't already in the list
-            foreach (PartResource savedResource in savedResources)
-            {
-                if (this.part.Resources.Contains(savedResource.resourceName) == false)
-                {
-                    this.part.Resources.list.Add(savedResource);
-                    _templateResources.Add(resource);
-                }
             }
 
             //KIS templates work differently. We have to know the part's base and max volume.
@@ -876,9 +876,9 @@ namespace WildBlueIndustries
             //because the persistent KSP field seems to only apply to savegames.
             _defaultTemplate = protoNode.GetValue("defaultTemplate");
 
-            //Get the list of resources that may be replaced when switching templates
+            //Get the list of resources that must be kept when switching templates
             //If empty, then all of the part's resources will be cleared during a template switch.
-            _resourcesToReplace = protoNode.GetValue("resourcesToReplace");
+            _resourcesToKeep = protoNode.GetValue("resourcesToKeep");
 
             value = protoNode.GetValue("confirmResourceSwitch");
             if (string.IsNullOrEmpty(value) == false)

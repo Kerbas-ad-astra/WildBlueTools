@@ -29,6 +29,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public string endEventGUIName;
 
+        [KSPField(isPersistant = true)]
+        public bool guiIsVisible = true;
+
         //Helper objects
         public bool isDeployed = false;
         protected AnimationState animationState;
@@ -69,6 +72,7 @@ namespace WildBlueIndustries
 
         public virtual void showGui(bool isVisible)
         {
+            guiIsVisible = isVisible;
             Events["ToggleAnimation"].guiActive = isVisible;
             Events["ToggleAnimation"].guiActiveEditor = isVisible;
         }
@@ -149,8 +153,8 @@ namespace WildBlueIndustries
             anim[animationName].layer = 2;
 
             //Set toggle button
-            Events["ToggleAnimation"].guiActive = true;
-            Events["ToggleAnimation"].guiActiveEditor = true;
+            Events["ToggleAnimation"].guiActive = guiIsVisible;
+            Events["ToggleAnimation"].guiActiveEditor = guiIsVisible;
 
             if (isDeployed)
             {

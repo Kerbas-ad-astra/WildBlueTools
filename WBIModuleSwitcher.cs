@@ -45,7 +45,6 @@ namespace WildBlueIndustries
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
-            /*
             ConfigNode[] moduleNodes = node.GetNodes("WBIMODULE");
             if (moduleNodes == null)
                 return;
@@ -53,13 +52,11 @@ namespace WildBlueIndustries
             //Save the module settings, we'll need these for later.
             foreach (ConfigNode moduleNode in moduleNodes)
                 moduleSettings.Add(moduleNode);
-             */
         }
 
         public override void OnSave(ConfigNode node)
         {
             base.OnSave(node);
-            /*
             ConfigNode saveNode;
 
             if (addedPartModules == null)
@@ -85,7 +82,6 @@ namespace WildBlueIndustries
                 //Add it to our node
                 node.AddNode(saveNode);
             }
-             */
         }
 
         public override void OnStart(PartModule.StartState state)
@@ -145,6 +141,29 @@ namespace WildBlueIndustries
         #endregion
 
         #region Helpers
+        protected void loadModuleSettings(PartModule module, int index)
+        {
+            Log("loadModuleSettings called");
+            if (index > moduleSettings.Count - 1)
+            {
+                Log("Index > moduleSettings.Count!");
+                return;
+            }
+            ConfigNode nodeSettings = moduleSettings[index];
+
+            //nodeSettings may have persistent fields. If so, then set them.
+            foreach (ConfigNode.Value nodeValue in nodeSettings.values)
+            {
+                if (nodeValue.name != "name")
+                {
+                    if (module.Fields[nodeValue.name] != null)
+                        module.Fields[nodeValue.name].Read(nodeValue.value, module);
+                    Log("Set " + nodeValue.name + " to " + nodeValue.value);
+                }
+            }
+        }
+
+        /*
         protected void loadModuleSettings()
         {
             Log("loadModuleSettings called");
@@ -181,6 +200,7 @@ namespace WildBlueIndustries
                 //If we have any of those then we need to set them as well.
             }
         }
+        */
 
         protected void fixModuleIndexes()
         {
@@ -284,6 +304,10 @@ namespace WildBlueIndustries
                         if (module == null)
                             continue;
 
+                        //Add the module to our list
+                        addedPartModules.Add(module);
+
+                        //Now wake up the module
                         object[] parameters = new object[] { };
                         MethodInfo awakenMethod = typeof(PartModule).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
                         if (awakenMethod == null)
@@ -292,11 +316,14 @@ namespace WildBlueIndustries
                             continue;
                         }
                         awakenMethod.Invoke(module, parameters);
+                        
+                        //Load up the config
                         module.Load(moduleNode);
+                        loadModuleSettings(module, addedPartModules.Count - 1);
+
+                        //Start it up
                         module.OnStart(StartState.None);
 
-                        //Add the module to our list
-                        addedPartModules.Add(module);
                         Log("Added " + moduleName);
                     }
                 }

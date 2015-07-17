@@ -45,7 +45,7 @@ namespace WildBlueIndustries
             //If the module is inflatable, deployed, and has kerbals inside, then don't allow the module to be deflated.
             if (isInflatable && isDeployed && this.part.protoModuleCrew.Count() > 0)
             {
-                ScreenMessages.PostScreenMessage(this.part.partName + " has crew aboard. Vacate the module before deflating it.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage(this.part.name + " has crew aboard. Vacate the module before deflating it.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return;
             }
 
