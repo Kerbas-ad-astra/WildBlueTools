@@ -616,7 +616,6 @@ namespace WildBlueIndustries
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
             Log("template: " + nodeTemplate);
             ConfigNode[] templateResourceNodes = nodeTemplate.GetNodes("RESOURCE");
-            Log("template resource count: " + templateResourceNodes.Length);
             if (templateResourceNodes == null)
             {
                 Log(nodeTemplate.GetValue("shortName") + " has no resources.");
@@ -624,18 +623,28 @@ namespace WildBlueIndustries
             }
 
             //Clear the list
+            Log("Clearing resource list");
             PartResource[] partResources = this.part.GetComponents<PartResource>();
-            List<PartResource> doomedResources = new List<PartResource>();
-            foreach (PartResource res in partResources)
-                if (_resourcesToKeep.Contains(res.resourceName) == false)
-                    doomedResources.Add(res);
-
-            foreach (PartResource doomed in doomedResources)
+            if (partResources != null)
             {
-                DestroyImmediate(doomed);
-                this.part.Resources.list.Remove(doomed);
+                List<PartResource> doomedResources = new List<PartResource>();
+                foreach (PartResource res in partResources)
+                {
+                    if (_resourcesToKeep == null)
+                        doomedResources.Add(res);
+
+                    else if (_resourcesToKeep.Contains(res.resourceName) == false)
+                        doomedResources.Add(res);
+                }
+
+                foreach (PartResource doomed in doomedResources)
+                {
+                    DestroyImmediate(doomed);
+                    this.part.Resources.list.Remove(doomed);
+                }
+                _templateResources.Clear();
             }
-            _templateResources.Clear();
+            Log("Resources cleared");
 
             //Set capacityModifier if there is an override for the template
             value = nodeTemplate.GetValue("shortName");

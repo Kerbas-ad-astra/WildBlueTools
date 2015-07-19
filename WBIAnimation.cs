@@ -75,6 +75,7 @@ namespace WildBlueIndustries
             guiIsVisible = isVisible;
             Events["ToggleAnimation"].guiActive = isVisible;
             Events["ToggleAnimation"].guiActiveEditor = isVisible;
+            Events["ToggleAnimation"].guiActiveUnfocused = isVisible;
         }
 
         #endregion
