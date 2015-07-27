@@ -23,23 +23,12 @@ namespace WildBlueIndustries
         void DrawOpsWindow();
     }
 
-    public class WBIMultiConverter : WBIModuleSwitcher
+    public class WBIMultiConverter : WBIAffordableSwitcher
     {
-        private const float kRecycleBase = 0.7f;
-        private const float kBaseSkillModifier = 0.04f;
-
-        //Should the player pay to reconfigure the module?
-        public static bool payForReconfigure = true;
-
-        //Should we check for the required skill to redecorate?
-        public static bool checkForSkill = true;
-
         //Helper objects
         protected ITemplateOps templateOps;
         protected MultiConverterModel _multiConverter;
         protected OpsView moduleOpsView;
-        private float _reconfigureCost;
-        private float _reconfigureCostModifier;
 
         #region User Events & API
         public Texture GetModuleLogo(string templateName)
@@ -150,10 +139,7 @@ namespace WildBlueIndustries
                 if (checkForSkill)
                 {
                     if (hasSufficientSkill(templateName) == false)
-                    {
-                        ScreenMessages.PostScreenMessage("Insufficient skill to reconfigure the module.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
                         return;
-                    }
                 }
 
                 //If we have to pay to reconfigure the module, then do our checks.
@@ -161,11 +147,7 @@ namespace WildBlueIndustries
                 {
                     //Can we afford it?
                     if (canAffordReconfigure(templateName) == false)
-                    {
-                        string notEnoughPartsMsg = string.Format("Insufficient resources to reconfigure the module. You need a total of {0:f2} RocketParts to reconfigure.", _reconfigureCost);
-                        ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                         return;
-                    }
 
                     //Yup, we can afford it
                     //Pay the reconfigure cost
@@ -277,7 +259,7 @@ namespace WildBlueIndustries
 
                     //Yup, we can afford it
                     //Pay the reconfigure cost
-                    _reconfigureCost = partCost;
+                    reconfigureCost = partCost;
                     payPartsCost();
                 }
 
@@ -294,7 +276,7 @@ namespace WildBlueIndustries
                     }
 
                     //Yup, we have the space
-                    _reconfigureCost = -recycleAmount;
+                    reconfigureCost = -recycleAmount;
                     payPartsCost();
                 }
 
@@ -370,153 +352,6 @@ namespace WildBlueIndustries
                 return true;
             else
                 return false;
-        }
-
-        protected virtual bool payPartsCost()
-        {
-            if (payForReconfigure == false)
-                return true;
-
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
-            double partsPaid = this.part.RequestResource(definition.id, _reconfigureCost, ResourceFlowMode.ALL_VESSEL);
-            
-            //Could we afford it?
-            if (Math.Abs(partsPaid) / Math.Abs(_reconfigureCost) < 0.999f)
-            {
-                //Put back what we took
-                this.part.RequestResource(definition.id, -partsPaid, ResourceFlowMode.ALL_VESSEL);
-                return false;
-            }
-
-            return true;
-        }
-
-        protected virtual bool hasSufficientSkill(string templateName)
-        {
-            string skillRequired = templatesModel[templateName].GetValue("reconfigureSkill");
-
-            //Tearing down the current configuration returns 70% of the current configuration's rocketParts, plus 5% per skill point
-            //of the highest ranking kerbal in the module with the appropriate skill required to reconfigure, or 5% per skill point
-            //of the kerbal on EVA if the kerbal has the required skill.
-            //If anybody can reconfigure the module to the desired template, then get the highest ranking Engineer and apply his/her skill bonus.
-            if (string.IsNullOrEmpty(skillRequired))
-            {
-                calculateRemodelCostModifier();
-                return true;
-            }
-
-            //Make sure we have an experienced person either out on EVA performing the reconfiguration, or inside the module.
-            //Check EVA first
-            if (FlightGlobals.ActiveVessel.isEVA)
-            {
-                Vessel vessel = FlightGlobals.ActiveVessel;
-                Experience.ExperienceTrait experience = vessel.GetVesselCrew()[0].experienceTrait;
-
-                if (experience.TypeName != skillRequired)
-                    return false;
-
-                calculateRemodelCostModifier(skillRequired);
-                return true;
-            }
-
-            //Now check the part itself
-            if (this.part.CrewCapacity == 0)
-            {
-                ScreenMessages.PostScreenMessage("Cannot reconfigure. Either crew the module or perform an EVA.", 5.0f, ScreenMessageStyle.UPPER_CENTER); 
-                return false;
-            }
-
-            foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
-            {
-                if (protoCrew.experienceTrait.TypeName != skillRequired)
-                    return false;
-            }
-
-            //Yup, we have sufficient skill.
-            calculateRemodelCostModifier(skillRequired);
-            return true;
-        }
-
-        protected void calculateRemodelCostModifier(string skillRequired = "Engineer")
-        {
-            int highestLevel = 0;
-
-            //Check for a kerbal on EVA
-            if (FlightGlobals.ActiveVessel.isEVA)
-            {
-                Vessel vessel = FlightGlobals.ActiveVessel;
-                Experience.ExperienceTrait experience = vessel.GetVesselCrew()[0].experienceTrait;
-
-                if (experience.TypeName == skillRequired)
-                {
-                    _reconfigureCostModifier = kBaseSkillModifier * experience.CrewMemberExperienceLevel();
-                    return;
-                }
-            }
-
-            //No kerbal on EVA. Check the part for the highest ranking kerbal onboard with the required skill.
-            if (this.part.CrewCapacity > 0)
-            {
-                foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
-                {
-                    if (protoCrew.experienceTrait.TypeName == skillRequired)
-                        if (protoCrew.experienceLevel > highestLevel)
-                            highestLevel = protoCrew.experienceLevel;
-                }
-            }
-
-            _reconfigureCostModifier = kBaseSkillModifier * highestLevel;
-        }
-
-        protected float calculateRecycleAmount()
-        {
-            calculateRemodelCostModifier();
-
-            return kRecycleBase + _reconfigureCostModifier;
-        }
-
-        protected virtual bool canAffordReconfigure(string templateName)
-        {
-            string value;
-
-            value = templatesModel[templateName].GetValue("rocketParts");
-            if (string.IsNullOrEmpty(value) == false)
-            {
-                float rocketPartCost = float.Parse(value);
-                PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
-                Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
-
-                //An inflatable part that hasn't been inflated yet is an automatic pass.
-                if (isInflatable && !isDeployed)
-                    return true;
-
-                //Get the current template's rocket part cost.
-                value = CurrentTemplate.GetValue("rocketParts");
-                if (string.IsNullOrEmpty(value) == false)
-                {
-                    float recyclePartsAmount = float.Parse(value);
-
-                    //calculate the amount of parts that we can recycle.
-                    recyclePartsAmount *= calculateRecycleAmount();
-
-                    //Now recalculate rocketPartCost, accounting for the parts we can recycle.
-                    //A negative value means we'll get parts back, a positive number means we pay additional parts.
-                    //Ex: current configuration takes 1200 parts. new configuration takes 900.
-                    //We recycle 90% of the current configuration (1080 parts).
-                    //The reconfigure cost is: 900 - 1080 = -180 parts
-                    //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
-                    _reconfigureCost = rocketPartCost - recyclePartsAmount;
-                }
-
-                //now check to make sure the vessel has enough parts.
-                if (resource == null)
-                    return false;
-
-                else if (resource.amount < _reconfigureCost)
-                    return false;
-            }
-
-            return true;
         }
 
         public void OnGUI()

@@ -36,6 +36,9 @@ namespace WildBlueIndustries
         protected string logoPanelName;
         protected string glowPanelName;
 
+        //Name of the template nodes.
+        public string templateNodes;
+
         //Name of the transform(s) for the colony decal.
         //These names come from the model itself.
         private string _logoPanelTransforms;
@@ -43,9 +46,6 @@ namespace WildBlueIndustries
         //List of resources that we must keep when performing a template switch.
         //If set to NONE, then all of the part's resources will be cleared.
         private string _resourcesToKeep = "NONE";
-
-        //Name of the template nodes.
-        private string _templateNodes;
 
         //Name of the template types allowed
         private string _templateTypes;
@@ -127,6 +127,11 @@ namespace WildBlueIndustries
 
             if (templateIndex != -1)
             {
+                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
+                    payPartsCost();
+                else
+                    return;
                 UpdateContentsAndGui(templateIndex);
                 UpdateSymmetry(templateIndex);
                 return;
@@ -155,6 +160,11 @@ namespace WildBlueIndustries
 
             if (templateIndex != -1)
             {
+                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
+                    payPartsCost();
+                else
+                    return;
                 UpdateContentsAndGui(templateIndex);
                 UpdateSymmetry(templateIndex);
                 return;
@@ -478,14 +488,14 @@ namespace WildBlueIndustries
                 protoNode = protoPartNodes[protoNodeKey];
 
                 //Name of the nodes to use as templates
-                _templateNodes = protoNode.GetValue("templateNodes");
+                templateNodes = protoNode.GetValue("templateNodes");
 
                 //Also get template types
                 _templateTypes = protoNode.GetValue("templateTypes");
             }
 
             //Create the templatesModel
-            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), _templateNodes, _templateTypes);
+            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTypes);
 
             //If we have resources in our node then load them.
             if (resourceNodes != null)
@@ -695,6 +705,7 @@ namespace WildBlueIndustries
                 }
 
                 _templateResources.Add(resource);
+                resource.isTweakable = true;
             }
 
             //KIS templates work differently. We have to know the part's base and max volume.
@@ -876,7 +887,7 @@ namespace WildBlueIndustries
                 fieldReconfigurable = bool.Parse(value);
 
             //Name of the nodes to use as templates
-            _templateNodes = protoNode.GetValue("templateNodes");
+            templateNodes = protoNode.GetValue("templateNodes");
 
             //Also get template types
             _templateTypes = protoNode.GetValue("templateTypes");
@@ -954,14 +965,14 @@ namespace WildBlueIndustries
             }
         }
         
-        protected void initTemplates()
+        public void initTemplates()
         {
             Log("initTemplates called");
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
             if (templatesModel == null)
                 templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log));
-            templatesModel.templateNodeName = _templateNodes;
+            templatesModel.templateNodeName = templateNodes;
             templatesModel.templateTypes = _templateTypes;
 
             if (templatesModel.templateNodes == null)
@@ -993,8 +1004,34 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActiveEditor = false;
                 Events["PrevType"].guiActiveUnfocused = false;
             }
+            else if (templatesModel.templateNodes.Count<ConfigNode>() >= 2)
+            {
+                Events["NextType"].guiActive = true;
+                Events["NextType"].guiActiveEditor = true;
+                Events["NextType"].guiActiveUnfocused = true;
+                Events["PrevType"].guiActive = true;
+                Events["PrevType"].guiActiveEditor = true;
+                Events["PrevType"].guiActiveUnfocused = true;
+            }
+
         }
         #endregion
 
+        #region ReconfigurationCosts
+        protected virtual bool payPartsCost()
+        {
+             return true;
+        }
+
+        protected virtual bool hasSufficientSkill(string templateName)
+        {
+            return true;
+        }
+
+        protected virtual bool canAffordReconfigure(string templateName)
+        {
+            return true;
+        }        
+        #endregion
     }
 }

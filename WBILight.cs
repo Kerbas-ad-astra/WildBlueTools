@@ -23,12 +23,79 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public double ecRequired;
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true)]
+        [UI_FloatRange(stepIncrement = 0.05f, maxValue = 1f, minValue = 0f)]
+        public float red;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true)]
+        [UI_FloatRange(stepIncrement = 0.05f, maxValue = 1f, minValue = 0f)]
+        public float green;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true)]
+        [UI_FloatRange(stepIncrement = 0.05f, maxValue = 1f, minValue = 0f)]
+        public float blue;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true)]
+        [UI_FloatRange(stepIncrement = 0.05f, maxValue = 1f, minValue = 0f)]
+        public float level = -1f;
+
+        Light[] lights;
+        float intensity;
+        float prevRed;
+        float prevGreen;
+        float prevBlue;
+        float prevLevel;
+
+        protected override void getProtoNodeValues(ConfigNode protoNode)
+        {
+            base.getProtoNodeValues(protoNode);
+            string value;
+
+            //If the red, green, blue, level fields don't exist then hide their GUI.
+            value = protoNode.GetValue("red");
+            if (string.IsNullOrEmpty(value))
+            {
+                Fields["red"].guiActive = false;
+                Fields["red"].guiActiveEditor = false;
+            }
+            value = protoNode.GetValue("green");
+            if (string.IsNullOrEmpty(value))
+            {
+                Fields["green"].guiActive = false;
+                Fields["green"].guiActiveEditor = false;
+            }
+            value = protoNode.GetValue("blue");
+            if (string.IsNullOrEmpty(value))
+            {
+                Fields["blue"].guiActive = false;
+                Fields["blue"].guiActiveEditor = false;
+            }
+
+            value = protoNode.GetValue("intensity");
+            if (string.IsNullOrEmpty(value) == false)
+            {
+                intensity = float.Parse(value);
+                if (level == -1f)
+                    level = 1.0f;
+            }
+            else
+            {
+                Fields["level"].guiActive = false;
+                Fields["level"].guiActiveEditor = false;
+            }
+        }
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
             Animation anim = this.part.FindModelAnimators(animationName)[0];
 
             anim[animationName].layer = 3;
+
+            //Find the lights
+            lights = this.part.gameObject.GetComponentsInChildren<Light>();
+            Log("THERE! ARE! " + lights.Length + " LIGHTS!");
+            setupLights();
         }
 
         public override void OnFixedUpdate()
@@ -44,6 +111,42 @@ namespace WildBlueIndustries
                 if (ecObtained / ecPerTimeTick < 0.999)
                     ToggleAnimation();
             }
+
+            //If the settings have changed then re-setup the lights.
+            if (prevRed != red || prevGreen != green || prevBlue != blue || prevLevel != level)
+                setupLights();
         }
+
+        public override void ToggleAnimation()
+        {
+            base.ToggleAnimation();
+            setupLights();
+        }
+
+        protected void setupLights()
+        {
+            if (lights == null)
+                return;
+            if (lights.Length == 0)
+                return;
+            Color color = new Color(red, green, blue);
+
+            foreach (Light light in lights)
+            {
+                light.color = color;
+
+                if (isDeployed)
+                    light.intensity = intensity * level;
+                else
+                    light.intensity = 0;
+            }
+
+            //Get baseline values
+            prevRed = red;
+            prevGreen = green;
+            prevBlue = blue;
+            prevLevel = level;
+        }
+
     }
 }

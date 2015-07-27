@@ -139,7 +139,14 @@ namespace WildBlueIndustries
 
             SetupAnimations();
 
-            if (flightAnimationOnly)
+            if (string.IsNullOrEmpty(animationName))
+            {
+                Events["ToggleInflation"].guiActive = false;
+                Events["ToggleInflation"].guiActiveEditor = false;
+                Events["ToggleInflation"].guiActiveUnfocused = false;
+            }
+
+            else if (flightAnimationOnly)
                 Events["ToggleInflation"].guiActiveEditor = false;
         }
         #endregion
