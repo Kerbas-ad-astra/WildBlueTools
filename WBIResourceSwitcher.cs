@@ -36,16 +36,16 @@ namespace WildBlueIndustries
         protected string logoPanelName;
         protected string glowPanelName;
 
+        //Name of the template nodes.
+        public string templateNodes;
+
         //Name of the transform(s) for the colony decal.
         //These names come from the model itself.
         private string _logoPanelTransforms;
 
-        //List of resources that we are allowed to clear when performing a template switch.
-        //If set to ALL, then all of the part's resources will be cleared.
-        private string _resourcesToReplace = "ALL";
-
-        //Name of the template nodes.
-        private string _templateNodes;
+        //List of resources that we must keep when performing a template switch.
+        //If set to NONE, then all of the part's resources will be cleared.
+        private string _resourcesToKeep = "NONE";
 
         //Name of the template types allowed
         private string _templateTypes;
@@ -127,6 +127,11 @@ namespace WildBlueIndustries
 
             if (templateIndex != -1)
             {
+                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
+                    payPartsCost();
+                else
+                    return;
                 UpdateContentsAndGui(templateIndex);
                 UpdateSymmetry(templateIndex);
                 return;
@@ -155,6 +160,11 @@ namespace WildBlueIndustries
 
             if (templateIndex != -1)
             {
+                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
+                    payPartsCost();
+                else
+                    return;
                 UpdateContentsAndGui(templateIndex);
                 UpdateSymmetry(templateIndex);
                 return;
@@ -478,14 +488,14 @@ namespace WildBlueIndustries
                 protoNode = protoPartNodes[protoNodeKey];
 
                 //Name of the nodes to use as templates
-                _templateNodes = protoNode.GetValue("templateNodes");
+                templateNodes = protoNode.GetValue("templateNodes");
 
                 //Also get template types
                 _templateTypes = protoNode.GetValue("templateTypes");
             }
 
             //Create the templatesModel
-            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), _templateNodes, _templateTypes);
+            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTypes);
 
             //If we have resources in our node then load them.
             if (resourceNodes != null)
@@ -609,8 +619,6 @@ namespace WildBlueIndustries
         public virtual void loadResourcesFromTemplate(ConfigNode nodeTemplate)
         {
             PartResource resource = null;
-            List<PartResource> resourceList = this.part.Resources.list;
-            List<PartResource> savedResources = new List<PartResource>();
             string value;
             string templateType = nodeTemplate.GetValue("templateType");
             float capacityModifier = capacityFactor;
@@ -618,7 +626,6 @@ namespace WildBlueIndustries
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
             Log("template: " + nodeTemplate);
             ConfigNode[] templateResourceNodes = nodeTemplate.GetNodes("RESOURCE");
-            Log("template resource count: " + templateResourceNodes.Length);
             if (templateResourceNodes == null)
             {
                 Log(nodeTemplate.GetValue("shortName") + " has no resources.");
@@ -626,12 +633,28 @@ namespace WildBlueIndustries
             }
 
             //Clear the list
-            //Much quicker than removing individual resources...
+            Log("Clearing resource list");
             PartResource[] partResources = this.part.GetComponents<PartResource>();
-            foreach (PartResource doomed in partResources)
-                DestroyImmediate(doomed);
-            this.part.Resources.list.Clear();
-            _templateResources.Clear();
+            if (partResources != null)
+            {
+                List<PartResource> doomedResources = new List<PartResource>();
+                foreach (PartResource res in partResources)
+                {
+                    if (_resourcesToKeep == null)
+                        doomedResources.Add(res);
+
+                    else if (_resourcesToKeep.Contains(res.resourceName) == false)
+                        doomedResources.Add(res);
+                }
+
+                foreach (PartResource doomed in doomedResources)
+                {
+                    DestroyImmediate(doomed);
+                    this.part.Resources.list.Remove(doomed);
+                }
+                _templateResources.Clear();
+            }
+            Log("Resources cleared");
 
             //Set capacityModifier if there is an override for the template
             value = nodeTemplate.GetValue("shortName");
@@ -650,6 +673,12 @@ namespace WildBlueIndustries
             Log("template resource count: " + templateResourceNodes.Length);
             foreach (ConfigNode resourceNode in templateResourceNodes)
             {
+                //If we kept the resource, then skip this template resource.
+                //We won't know what the original values were if we merged values.
+                value = resourceNode.GetValue("name");
+                if (this.part.Resources.Contains(value))
+                    continue;
+
                 resource = this.part.AddResource(resourceNode);
                 Log("Added resource: " + resource.resourceName);
 
@@ -676,16 +705,7 @@ namespace WildBlueIndustries
                 }
 
                 _templateResources.Add(resource);
-            }
-
-            //Put back the resources that aren't already in the list
-            foreach (PartResource savedResource in savedResources)
-            {
-                if (this.part.Resources.Contains(savedResource.resourceName) == false)
-                {
-                    this.part.Resources.list.Add(savedResource);
-                    _templateResources.Add(resource);
-                }
+                resource.isTweakable = true;
             }
 
             //KIS templates work differently. We have to know the part's base and max volume.
@@ -867,7 +887,7 @@ namespace WildBlueIndustries
                 fieldReconfigurable = bool.Parse(value);
 
             //Name of the nodes to use as templates
-            _templateNodes = protoNode.GetValue("templateNodes");
+            templateNodes = protoNode.GetValue("templateNodes");
 
             //Also get template types
             _templateTypes = protoNode.GetValue("templateTypes");
@@ -876,9 +896,9 @@ namespace WildBlueIndustries
             //because the persistent KSP field seems to only apply to savegames.
             _defaultTemplate = protoNode.GetValue("defaultTemplate");
 
-            //Get the list of resources that may be replaced when switching templates
+            //Get the list of resources that must be kept when switching templates
             //If empty, then all of the part's resources will be cleared during a template switch.
-            _resourcesToReplace = protoNode.GetValue("resourcesToReplace");
+            _resourcesToKeep = protoNode.GetValue("resourcesToKeep");
 
             value = protoNode.GetValue("confirmResourceSwitch");
             if (string.IsNullOrEmpty(value) == false)
@@ -945,14 +965,14 @@ namespace WildBlueIndustries
             }
         }
         
-        protected void initTemplates()
+        public void initTemplates()
         {
             Log("initTemplates called");
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
             if (templatesModel == null)
                 templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log));
-            templatesModel.templateNodeName = _templateNodes;
+            templatesModel.templateNodeName = templateNodes;
             templatesModel.templateTypes = _templateTypes;
 
             if (templatesModel.templateNodes == null)
@@ -984,8 +1004,34 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActiveEditor = false;
                 Events["PrevType"].guiActiveUnfocused = false;
             }
+            else if (templatesModel.templateNodes.Count<ConfigNode>() >= 2)
+            {
+                Events["NextType"].guiActive = true;
+                Events["NextType"].guiActiveEditor = true;
+                Events["NextType"].guiActiveUnfocused = true;
+                Events["PrevType"].guiActive = true;
+                Events["PrevType"].guiActiveEditor = true;
+                Events["PrevType"].guiActiveUnfocused = true;
+            }
+
         }
         #endregion
 
+        #region ReconfigurationCosts
+        protected virtual bool payPartsCost()
+        {
+             return true;
+        }
+
+        protected virtual bool hasSufficientSkill(string templateName)
+        {
+            return true;
+        }
+
+        protected virtual bool canAffordReconfigure(string templateName)
+        {
+            return true;
+        }        
+        #endregion
     }
 }

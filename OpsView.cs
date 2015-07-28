@@ -19,6 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public delegate bool TemplateHasOpsWindow();
+    public delegate void DrawTemplateOps();
     public delegate void NextModule();
     public delegate void PrevModule();
     public delegate void NextPreviewModule(string templateName);
@@ -27,15 +29,16 @@ namespace WildBlueIndustries
     public delegate string GetModuleInfo(string templateName);
     public delegate Texture GetModuleLogo(string templateName);
 
-    class OpsView : Window<OpsView>
+    public class OpsView : Window<OpsView>
     {
         public List<ModuleResourceConverter> converters = null;
         public Part part;
         public PartResourceList resources;
-        public bool canBeReconfigured;
+        public bool techResearched;
         public string nextName;
         public string prevName;
         public string previewName;
+        public string cost;
         public NextModule nextModuleDelegate = null;
         public PrevModule prevModuleDelegate = null;
         public NextPreviewModule nextPreviewDelegate = null;
@@ -43,19 +46,26 @@ namespace WildBlueIndustries
         public ChangeModuleType changeModuleTypeDelegate = null;
         public GetModuleInfo getModuleInfoDelegate = null;
         public GetModuleLogo getModuleLogoDelegate = null;
+        public TemplateHasOpsWindow teplateHasOpsWindowDelegate = null;
+        public DrawTemplateOps drawTemplateOpsDelegate = null;
 
         private Vector2 _scrollPosConverters;
         private Vector2 _scrollPosResources;
         private InfoView modSummary = new InfoView();
         private string moduleInfo;
-
+        ModuleCommand commandModule;
+        WBIResourceSwitcher switcher;
+        WBILight lightModule;
+        protected bool drawTemplateOps;
         string[] tabs = new string[] { "Info", "Resources" };
         int selectedTab = 0;
+        private string[] managementTabs = new string[] { "Processors", "Command & Control" };
+        private int managementTab = 0;
         private string _shortName;
         public Texture moduleLabel;
 
         public OpsView() :
-        base("Multiconverter Operations Manager (MOM)", 600, 300)
+        base("Operations Manager", 600, 330)
         {
             Resizable = false;
             _scrollPosConverters = new Vector2(0, 0);
@@ -84,10 +94,57 @@ namespace WildBlueIndustries
                 modSummary.OnGUI();
         }
 
+        public void GetPartModules()
+        {
+            commandModule = this.part.FindModuleImplementing<ModuleCommand>();
+            if (commandModule != null)
+                foreach (BaseEvent cmdEvent in commandModule.Events)
+                {
+                    cmdEvent.guiActive = false;
+                    cmdEvent.guiActiveUnfocused = false;
+                }
+
+            switcher = this.part.FindModuleImplementing<WBIResourceSwitcher>();
+            if (switcher != null)
+            {
+                switcher.Events["ToggleDecals"].guiActive = false;
+                switcher.Events["ToggleDecals"].guiActiveUnfocused = false;
+            }
+
+            lightModule = this.part.FindModuleImplementing<WBILight>();
+            if (lightModule != null)
+                lightModule.showGui(false);
+
+        }
+
         protected override void DrawWindowContents(int windowId)
         {
             GUILayout.BeginVertical();
+            GUILayout.BeginHorizontal();
+
             GUILayout.Label("Current: " + shortName);
+
+            if (teplateHasOpsWindowDelegate != null)
+            {
+                bool hasOpsWindow = teplateHasOpsWindowDelegate();
+                if (hasOpsWindow && drawTemplateOpsDelegate != null)
+                {
+                    string buttonTitle = drawTemplateOps == true ? "Hide" : "Show";
+
+                    if (GUILayout.Button(buttonTitle, GUILayout.Width(50)))
+                        drawTemplateOps = !drawTemplateOps;
+
+                    if (drawTemplateOps)
+                    {
+                        GUILayout.EndHorizontal();
+                        drawTemplateOpsDelegate();
+                        GUILayout.EndVertical();
+                        return;
+                    }
+                }
+            }
+
+            GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
 
@@ -145,19 +202,48 @@ namespace WildBlueIndustries
             GUILayout.EndVertical();
         }
 
-        protected void drawModuleManagementPane()
+        protected virtual void drawModuleManagementPane()
         {
             GUILayout.BeginVertical(GUILayout.MaxWidth(350f));
+            GUILayout.Space(4);
 
-            //Converters
-            drawConverters();
+            managementTab = GUILayout.SelectionGrid(managementTab, managementTabs, tabs.Length);
+            if (managementTab == 0)
+            {
+                //Draw converters
+                drawConverters();
 
-            //Depending upon loaded scene, we'll either show the module next/prev buttons and labels
-            //or we'll show the module preview buttons.
-            if (!HighLogic.LoadedSceneIsEditor)
-                drawPreviewGUI();
-            else
-                drawEditorGUI();
+                //Depending upon loaded scene, we'll either show the module next/prev buttons and labels
+                //or we'll show the module preview buttons.
+                if (!HighLogic.LoadedSceneIsEditor)
+                    drawPreviewGUI();
+                else
+                    drawEditorGUI();
+            }
+
+            else //C&C tab
+            {
+                //Control From Here
+                if (commandModule != null)
+                {
+                    if (GUILayout.Button("Control From Here"))
+                        commandModule.MakeReference();
+
+                    //Rename Vessel
+                    if (GUILayout.Button("Rename Base"))
+                        commandModule.RenameVessel();
+                }
+
+                //Toggle Decals
+                if (switcher != null)
+                    if (GUILayout.Button("Toggle Decals"))
+                        switcher.ToggleDecals();
+
+                //Toggle Lights
+                if (lightModule != null)
+                    if (GUILayout.Button("Toggle Lights"))
+                        lightModule.ToggleAnimation();
+            }
 
             GUILayout.EndVertical();
         }
@@ -177,7 +263,7 @@ namespace WildBlueIndustries
         protected void drawPreviewGUI()
         {
             //Only allow reconfiguring of the module if it allows field reconfiguration.
-            if (canBeReconfigured == false)
+            if (techResearched == false)
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("This module cannot be reconfigured. Research more technology.");
@@ -187,28 +273,38 @@ namespace WildBlueIndustries
 
             string moduleInfo;
 
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
             GUILayout.Label("Current Preview: " + previewName);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            GUILayout.Label("Reconfiguration Cost: " + cost + " RocketParts");
 
             //Make sure we have something to display
             if (string.IsNullOrEmpty(previewName))
                 previewName = nextName;
 
-            //Next preview button
-            if (GUILayout.Button("Next: " + nextName))
+            if (converters.Count > 2)
             {
-                if (nextPreviewDelegate != null)
-                    nextPreviewDelegate(previewName);
+                //Next preview button
+                if (GUILayout.Button("Next: " + nextName))
+                {
+                    if (nextPreviewDelegate != null)
+                        nextPreviewDelegate(previewName);
+                }
+
+                //Prev preview button
+                if (GUILayout.Button("Prev: " + prevName))
+                {
+                    if (prevPreviewDelegate != null)
+                        prevPreviewDelegate(previewName);
+                }
             }
 
-            //Prev preview button
-            if (GUILayout.Button("Prev: " + prevName))
+            else
             {
-                if (prevPreviewDelegate != null)
-                    prevPreviewDelegate(previewName);
+                //Next preview button
+                if (GUILayout.Button("Next: " + nextName))
+                {
+                    if (nextPreviewDelegate != null)
+                        nextPreviewDelegate(previewName);
+                }
             }
 
             //More info button
@@ -277,6 +373,10 @@ namespace WildBlueIndustries
 
                 GUILayout.EndVertical();
             }
+
+            if (converters.Count == 0)
+                GUILayout.Label("No processors are present in this configuration.");
+
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
         }

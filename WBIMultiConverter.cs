@@ -18,11 +18,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public class WBIMultiConverter : WBIModuleSwitcher
+    public interface ITemplateOps
+    {
+        void DrawOpsWindow();
+    }
+
+    public class WBIMultiConverter : WBIAffordableSwitcher
     {
         //Helper objects
-        private MultiConverterModel _multiConverter;
-        private OpsView _moduleOpsView;
+        protected ITemplateOps templateOps;
+        protected MultiConverterModel _multiConverter;
+        protected OpsView moduleOpsView;
 
         #region User Events & API
         public Texture GetModuleLogo(string templateName)
@@ -88,15 +94,16 @@ namespace WildBlueIndustries
             int templateIndex = templatesModel.GetNextUsableIndex(curTemplateIndex);
 
             //Set preview name to the new template's name
-            _moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
+            moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
+            moduleOpsView.cost = templatesModel[templateIndex].GetValue("rocketParts");
 
             //Get next template name
             templateIndex = templatesModel.GetNextUsableIndex(templateIndex);
             if (templateIndex != -1 && templateIndex != curTemplateIndex)
-                _moduleOpsView.nextName = templatesModel[templateIndex].GetValue("shortName");
+                moduleOpsView.nextName = templatesModel[templateIndex].GetValue("shortName");
 
             //Get previous template name
-            _moduleOpsView.prevName = templateName;
+            moduleOpsView.prevName = templateName;
         }
 
         public void PreviewPrevTemplate(string templateName)
@@ -108,25 +115,46 @@ namespace WildBlueIndustries
             int templateIndex = templatesModel.GetPrevUsableIndex(curTemplateIndex);
 
             //Set preview name to the new template's name
-            _moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
+            moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
+            moduleOpsView.cost = templatesModel[templateIndex].GetValue("rocketParts");
 
             //Get next template name (which will be the current template)
-            _moduleOpsView.nextName = templateName;
+            moduleOpsView.nextName = templateName;
 
             //Get previous template name
             templateIndex = templatesModel.GetPrevUsableIndex(templateIndex);
             if (templateIndex != -1 && templateIndex != curTemplateIndex)
-                _moduleOpsView.prevName = templatesModel[templateIndex].GetValue("shortName");
+                moduleOpsView.prevName = templatesModel[templateIndex].GetValue("shortName");
         }
 
         public void SwitchTemplateType(string templateName)
         {
             Log("SwitchTemplateType called.");
+
             //Can we use the index?
             EInvalidTemplateReasons reasonCode = templatesModel.CanUseTemplate(templateName);
             if (reasonCode == EInvalidTemplateReasons.TemplateIsValid)
             {
-                Log("Template is valid.");
+                //If we require specific skills to perform the reconfigure, do we have sufficient skill to reconfigure it?
+                if (checkForSkill)
+                {
+                    if (hasSufficientSkill(templateName) == false)
+                        return;
+                }
+
+                //If we have to pay to reconfigure the module, then do our checks.
+                if (payForReconfigure)
+                {
+                    //Can we afford it?
+                    if (canAffordReconfigure(templateName) == false)
+                        return;
+
+                    //Yup, we can afford it
+                    //Pay the reconfigure cost
+                    payPartsCost();
+                }
+
+                //Update contents
                 UpdateContentsAndGui(templateName);
                 return;
             }
@@ -147,7 +175,7 @@ namespace WildBlueIndustries
             }
         }
 
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Manage Operations", active = true)]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Manage Operations", active = true, guiActiveUnfocused = true, unfocusedRange = 3.0f)]
         public void ManageOperations()
         {
             Log("ManageOperations called");
@@ -155,32 +183,111 @@ namespace WildBlueIndustries
             bool hasRequiredTechToReconfigure = true;
 
             //Set short name
-            _moduleOpsView.shortName = shortName;
+            moduleOpsView.shortName = shortName;
 
             //Minimum tech
             if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && string.IsNullOrEmpty(techRequiredToReconfigure) == false)
                 hasRequiredTechToReconfigure = ResearchAndDevelopment.GetTechnologyState(techRequiredToReconfigure) == RDTech.State.Available ? true : false;
-            _moduleOpsView.canBeReconfigured = fieldReconfigurable & hasRequiredTechToReconfigure;
+            moduleOpsView.techResearched = fieldReconfigurable & hasRequiredTechToReconfigure;
 
             //Set preview, next, and previous
             if (HighLogic.LoadedSceneIsEditor == false)
             {
-                _moduleOpsView.previewName = shortName;
+                moduleOpsView.previewName = shortName;
+                moduleOpsView.cost = templatesModel[templateIndex].GetValue("rocketParts");
 
                 templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
                 if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
-                    _moduleOpsView.nextName = templatesModel[templateIndex].GetValue("shortName");
+                    moduleOpsView.nextName = templatesModel[templateIndex].GetValue("shortName");
 
                 templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
                 if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
-                    _moduleOpsView.prevName = templatesModel[templateIndex].GetValue("shortName");
+                    moduleOpsView.prevName = templatesModel[templateIndex].GetValue("shortName");
             }
 
-            _moduleOpsView.ToggleVisible();
+            moduleOpsView.ToggleVisible();
         }
         #endregion
 
         #region Module Overrides
+
+        public override void OnUpdate()
+        {
+            base.OnUpdate();
+
+            //Show/hide the inflate/deflate button depending upon whether or not crew is aboard
+            if (this.part.protoModuleCrew.Count() > 0)
+            {
+                Events["ToggleInflation"].guiActive = false;
+                Events["ToggleInflation"].guiActiveUnfocused = false;
+            }
+
+            else
+            {
+                Events["ToggleInflation"].guiActive = true;
+                Events["ToggleInflation"].guiActiveUnfocused = true;
+            }
+        }
+
+        public override void ToggleInflation()
+        {
+            PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
+            Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
+            string parts = CurrentTemplate.GetValue("rocketParts");
+
+            if (string.IsNullOrEmpty(parts))
+            {
+                base.ToggleInflation();
+                return;
+            }
+            float partCost = float.Parse(parts);
+
+            //Do we pay for resources? If so, either pay the resources if we're deploying the module, or refund the recycled parts
+            if (payForReconfigure)
+            {
+                //If we aren't deployed then see if we can afford to pay the resource cost.
+                if (!isDeployed)
+                {
+                    //Can we afford it?
+                    if (resource == null || resource.amount < partCost)
+                    {
+                        notEnoughParts();
+                        string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} RocketParts to assemble.", partCost);
+                        ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                        return;
+                    }
+
+                    //Yup, we can afford it
+                    //Pay the reconfigure cost
+                    reconfigureCost = partCost;
+                    payPartsCost();
+                }
+
+                //We are deployed, calculate the amount of parts that can be recycled.
+                else
+                {
+                    float recycleAmount = partCost * calculateRecycleAmount();
+
+                    //Do we have sufficient space in the vessel to store the recycled parts?
+                    if (resource.maxAmount - resource.amount < recycleAmount)
+                    {
+                        ScreenMessages.PostScreenMessage("Cannot deflate the module. Insufficient space to store the recycled parts.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                        return;
+                    }
+
+                    //Yup, we have the space
+                    reconfigureCost = -recycleAmount;
+                    payPartsCost();
+                }
+
+            }
+
+            base.ToggleInflation();
+        }
+
+        protected virtual void notEnoughParts()
+        {
+        }
 
         public override void OnLoad(ConfigNode node)
         {
@@ -189,7 +296,7 @@ namespace WildBlueIndustries
             //Create the multiConverter
             _multiConverter = new MultiConverterModel(this.part, this.vessel, new LogDelegate(Log));
 
-            //Tell multiconverter to store converter status.
+            //Tell multiConverter to store converter status.
             _multiConverter.Load(node);
         }
 
@@ -211,7 +318,7 @@ namespace WildBlueIndustries
             if (!HighLogic.LoadedSceneIsEditor && !HighLogic.LoadedSceneIsFlight)
                 return;
 
-            //Create the multiconverter. We have to do this when we're in the VAB/SPH.
+            //Create the multiConverter. We have to do this when we're in the VAB/SPH.
             if (_multiConverter == null)
                 _multiConverter = new MultiConverterModel(this.part, this.vessel, new LogDelegate(Log));
 
@@ -221,7 +328,7 @@ namespace WildBlueIndustries
             //Now we can call the base method.
             base.OnStart(state);
 
-            //Start the multiconverter
+            //Start the multiConverter
             _multiConverter.OnStart(state);
 
             //Fix module indexes (for things like the science lab)
@@ -231,10 +338,26 @@ namespace WildBlueIndustries
         #endregion
 
         #region Helpers
+        protected virtual void drawTemplateOps()
+        {
+            if (templateOps != null)
+                templateOps.DrawOpsWindow();
+        }
+
+        protected virtual bool templateHasOpsWindow()
+        {
+            templateOps = this.part.FindModuleImplementing<ITemplateOps>();
+
+            if (templateOps != null)
+                return true;
+            else
+                return false;
+        }
+
         public void OnGUI()
         {
-            if (_moduleOpsView != null)
-                _moduleOpsView.OnGUI();
+            if (moduleOpsView != null)
+                moduleOpsView.OnGUI();
         }
 
         public override void OnRedecorateModule(ConfigNode templateNode, bool payForRedecoration)
@@ -253,54 +376,57 @@ namespace WildBlueIndustries
             string templateName;
 
             //Change the OpsView's names
-            _moduleOpsView.shortName = shortName;
+            moduleOpsView.shortName = shortName;
 
             templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
             if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
             {
                 templateName = templatesModel[templateIndex].GetValue("shortName");
-                _moduleOpsView.nextName = templateName;
+                moduleOpsView.nextName = templateName;
             }
 
             else
             {
-                _moduleOpsView.nextName = "none available";
+                moduleOpsView.nextName = "none available";
             }
 
             templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
             if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
             {
                 templateName = templatesModel[templateIndex].GetValue("shortName");
-                _moduleOpsView.prevName = templateName;
+                moduleOpsView.prevName = templateName;
             }
 
             else
             {
-                _moduleOpsView.prevName = "none available";
+                moduleOpsView.prevName = "none available";
             }
 
-            if (_moduleOpsView.IsVisible())
+            if (moduleOpsView.IsVisible())
             {
-                _moduleOpsView.converters = _multiConverter.converters;
-                _moduleOpsView.resources = this.part.Resources;
+                moduleOpsView.converters = _multiConverter.converters;
+                moduleOpsView.resources = this.part.Resources;
             }
         }
 
-        protected void createModuleOpsView()
+        protected virtual void createModuleOpsView()
         {
             Log("createModuleOpsView called");
 
-            _moduleOpsView = new OpsView();
-            _moduleOpsView.converters = _multiConverter.converters;
-            _moduleOpsView.part = this.part;
-            _moduleOpsView.resources = this.part.Resources;
-            _moduleOpsView.nextModuleDelegate = new NextModule(NextType);
-            _moduleOpsView.prevModuleDelegate = new PrevModule(PrevType);
-            _moduleOpsView.nextPreviewDelegate = new NextPreviewModule(PreviewNextTemplate);
-            _moduleOpsView.prevPreviewDelegate = new PrevPreviewModule(PreviewPrevTemplate);
-            _moduleOpsView.getModuleInfoDelegate = new GetModuleInfo(GetModuleInfo);
-            _moduleOpsView.changeModuleTypeDelegate = new ChangeModuleType(SwitchTemplateType);
-            _moduleOpsView.getModuleLogoDelegate = new GetModuleLogo(GetModuleLogo);
+            moduleOpsView = new OpsView();
+            moduleOpsView.converters = _multiConverter.converters;
+            moduleOpsView.part = this.part;
+            moduleOpsView.resources = this.part.Resources;
+            moduleOpsView.nextModuleDelegate = new NextModule(NextType);
+            moduleOpsView.prevModuleDelegate = new PrevModule(PrevType);
+            moduleOpsView.nextPreviewDelegate = new NextPreviewModule(PreviewNextTemplate);
+            moduleOpsView.prevPreviewDelegate = new PrevPreviewModule(PreviewPrevTemplate);
+            moduleOpsView.getModuleInfoDelegate = new GetModuleInfo(GetModuleInfo);
+            moduleOpsView.changeModuleTypeDelegate = new ChangeModuleType(SwitchTemplateType);
+            moduleOpsView.getModuleLogoDelegate = new GetModuleLogo(GetModuleLogo);
+            moduleOpsView.teplateHasOpsWindowDelegate = new TemplateHasOpsWindow(templateHasOpsWindow);
+            moduleOpsView.drawTemplateOpsDelegate = new DrawTemplateOps(drawTemplateOps);
+            moduleOpsView.GetPartModules();
         }
 
         protected override void hideEditorGUI(PartModule.StartState state)
@@ -319,14 +445,14 @@ namespace WildBlueIndustries
             if (index != -1 && index != CurrentTemplateIndex)
             {
                 value = templatesModel.templateNodes[index].GetValue("shortName");
-                _moduleOpsView.nextName = value;
+                moduleOpsView.nextName = value;
             }
 
             index = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
             if (index != -1 && index != CurrentTemplateIndex)
             {
                 value = templatesModel.templateNodes[index].GetValue("shortName");
-                _moduleOpsView.prevName = value;
+                moduleOpsView.prevName = value;
             }
 
             if (templatesModel.templateNodes.Length == 1)
