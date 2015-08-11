@@ -49,6 +49,9 @@ namespace WildBlueIndustries
 
         public static bool HasResearchedNode(string techNode)
         {
+            if (string.IsNullOrEmpty(techNode))
+                return false;
+
             if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER || HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX)
             {
                 if (ResearchAndDevelopment.Instance != null)

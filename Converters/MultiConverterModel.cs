@@ -26,7 +26,7 @@ namespace WildBlueIndustries
         public Vessel vessel = null;
         public List<ModuleResourceConverter> converters;
 
-        protected Dictionary<string, bool> enabledStates = new Dictionary<string, bool>();
+        protected Dictionary<string, ConfigNode> converterStates = new Dictionary<string, ConfigNode>();
 
         #region API
         public MultiConverterModel(Part part, Vessel vessel, LogDelegate logDelegate)
@@ -56,7 +56,6 @@ namespace WildBlueIndustries
 
         public void Load(ConfigNode node)
         {
-            Log("[MultiConverterModel] Load called.");
             ConfigNode[] converterNodes = node.GetNodes("ConverterState");
 
             if (converterNodes == null)
@@ -66,12 +65,13 @@ namespace WildBlueIndustries
             }
 
             foreach (ConfigNode converterNode in converterNodes)
-                enabledStates.Add(converterNode.GetValue("ConverterName"), bool.Parse(converterNode.GetValue("IsActivated")));
+            {
+                converterStates.Add(converterNode.GetValue("ConverterName"), converterNode);
+            }
         }
 
         public void Save(ConfigNode node)
         {
-            Log("[MultiConverterModel] Save called.");
             ConfigNode converterNode;
 
             foreach (ModuleResourceConverter converter in converters)
@@ -90,7 +90,6 @@ namespace WildBlueIndustries
 
         public void LoadConvertersFromTemplate(ConfigNode nodeTemplate)
         {
-            Log("LoadConvertersFromTemplate called.");
             ConfigNode[] templateModules = nodeTemplate.GetNodes("MODULE");
             string value;
 
@@ -118,7 +117,12 @@ namespace WildBlueIndustries
 
         public ModuleResourceConverter AddFromTemplate(ConfigNode node)
         {
-            Log("AddFromTemplate called for converter: " + node.GetValue("ConverterName"));
+            string converterName = node.GetValue("ConverterName");
+            Log("AddFromTemplate called for converter: " + converterName);
+
+            ConfigNode settingsNode = null;
+            if (converterStates.ContainsKey(converterName))
+                settingsNode = converterStates[converterName];
 
             string value = node.GetValue("needs");
             if (string.IsNullOrEmpty(value) == false)
@@ -135,18 +139,53 @@ namespace WildBlueIndustries
                 return null;
             }
             awakenMethod.Invoke(converter, parameters);
-            converter.Load(node);
             converter.OnAwake();
             converter.OnActive();
-            converter.EnableModule();
 
-            /*
-            foreach (BaseField field in converter.Fields)
+            if (settingsNode != null)
             {
-                Debug.Log("field.name: " + field.name);
-                Debug.Log("value: " + field.GetValue(field.host));
+                foreach (ConfigNode.Value nodeValue in settingsNode.values)
+                {
+                    if (nodeValue.name != "name")
+                        node.SetValue(nodeValue.name, nodeValue.value, true);
+                }
             }
-             */
+            converter.Load(node);
+
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                switch (this.part.vessel.situation)
+                {
+                    case Vessel.Situations.ORBITING:
+                        converter.OnStart(PartModule.StartState.Orbital);
+                        break;
+                    case Vessel.Situations.LANDED:
+                        converter.OnStart(PartModule.StartState.Landed);
+                        break;
+                    case Vessel.Situations.SPLASHED:
+                        converter.OnStart(PartModule.StartState.Splashed);
+                        break;
+
+                    case Vessel.Situations.SUB_ORBITAL:
+                        converter.OnStart(PartModule.StartState.SubOrbital);
+                        break;
+
+                    case Vessel.Situations.FLYING:
+                        converter.OnStart(PartModule.StartState.Flying);
+                        break;
+
+                    default:
+                        converter.OnStart(PartModule.StartState.None);
+                        break;
+                }
+            }
+
+            else
+            {
+                converter.OnStart(PartModule.StartState.None);
+            }
+            converter.EnableModule();
+            setConverterState(converter);
 
             //Remove the converter's GUI
             RunHeadless(converter);
@@ -229,22 +268,33 @@ namespace WildBlueIndustries
             return "nothing";
         }
 
+        protected void setConverterState(ModuleResourceConverter converter)
+        {
+            ConfigNode node;
+            string value;
+
+            if (converterStates.ContainsKey(converter.ConverterName))
+            {
+                node = converterStates[converter.ConverterName];
+
+                if (node != null)
+                {
+                    if (node.HasValue("IsActivated"))
+                    {
+                        value = node.GetValue("IsActivated");
+                        if (value.ToLower() == "true")
+                            converter.StartResourceConverter();
+                    }
+                }
+            }
+        }
+
         public void OnStart(PartModule.StartState state)
         {
-            Log("[MulticonverterModel] OnStart - State: " + state);
-
-            //Set their active/inactive states from the data we collected during loading.
             foreach (ModuleResourceConverter converter in converters)
-            {
-                if (enabledStates.ContainsKey(converter.ConverterName))
-                    converter.IsActivated = enabledStates[converter.ConverterName];
+                setConverterState(converter);
 
-                if (converter.IsActivated)
-                    converter.StartResourceConverter();
-            }
-
-            //Cleanup
-            enabledStates.Clear();
+            converterStates.Clear();
         }
 
         #endregion
@@ -256,12 +306,17 @@ namespace WildBlueIndustries
             //Save the converter's name and activation state.
             node.AddValue("ConverterName", converter.ConverterName);
             node.AddValue("IsActivated", converter.IsActivated.ToString());
+
+            if (converter.IsActivated)
+                node.AddValue("lastUpdateTime", Planetarium.GetUniversalTime());
+            node.AddValue("HeatThrottle", converter.HeatThrottle);
+            node.AddValue("HeatThrottleSpeed", converter.HeatThrottleSpeed);
+            node.AddValue("avgHeatThrottle", converter.avgHeatThrottle);
+            node.AddValue("DirtyFlag", converter.DirtyFlag);
         }
 
         public void RunHeadless(ModuleResourceConverter converter)
         {
-            Log("RunHeadless called.");
-
             foreach (BaseEvent baseEvent in converter.Events)
             {
                 baseEvent.guiActive = false;

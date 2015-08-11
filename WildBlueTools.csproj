@@ -48,30 +48,35 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ExtendedPartModule.cs" />
-    <Compile Include="FixedUpdateHelper.cs" />
-    <Compile Include="InfoView.cs" />
-    <Compile Include="ModCategorizer.cs" />
-    <Compile Include="WBIAffordableSwitcher.cs" />
-    <Compile Include="WBIMeshToggle.cs" />
-    <Compile Include="WBIMultiConverter.cs" />
-    <Compile Include="MultiConverterModel.cs" />
-    <Compile Include="OpsView.cs" />
-    <Compile Include="WBILight.cs" />
-    <Compile Include="WBITemplateConverter.cs" />
-    <Compile Include="WBModuleDockingNode.cs" />
-    <Compile Include="WBIAnimation.cs" />
-    <Compile Include="WBIExtendedDecoupler.cs" />
-    <Compile Include="WBIInflatablePartModule.cs" />
-    <Compile Include="WBIMeshHelper.cs" />
-    <Compile Include="WBIModuleSwitcher.cs" />
-    <Compile Include="WBIResourceSwitcher.cs" />
-    <Compile Include="TemplatesModel.cs" />
-    <Compile Include="WindowUtils.cs" />
-    <Compile Include="Utils.cs" />
+    <Compile Include="GUI\WBIResultsDialogSwizzler.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utilities\ExtendedPartModule.cs" />
+    <Compile Include="GUI\FakeExperimentResults.cs" />
+    <Compile Include="Utilities\FixedUpdateHelper.cs" />
+    <Compile Include="GUI\InfoView.cs" />
+    <Compile Include="Utilities\ModCategorizer.cs" />
+    <Compile Include="Switchers\WBIAffordableSwitcher.cs" />
+    <Compile Include="Utilities\TransmitHelper.cs" />
+    <Compile Include="Utilities\WBIMeshToggle.cs" />
+    <Compile Include="Converters\WBIMultiConverter.cs" />
+    <Compile Include="Converters\MultiConverterModel.cs" />
+    <Compile Include="GUI\OpsView.cs" />
+    <Compile Include="Parts\WBILight.cs" />
+    <Compile Include="Converters\WBITemplateConverter.cs" />
+    <Compile Include="Parts\WBModuleDockingNode.cs" />
+    <Compile Include="Utilities\WBIAnimation.cs" />
+    <Compile Include="Parts\WBIExtendedDecoupler.cs" />
+    <Compile Include="Parts\WBIInflatablePartModule.cs" />
+    <Compile Include="Utilities\WBIMeshHelper.cs" />
+    <Compile Include="Switchers\WBIModuleSwitcher.cs" />
+    <Compile Include="Switchers\WBIResourceSwitcher.cs" />
+    <Compile Include="Switchers\TemplatesModel.cs" />
+    <Compile Include="GUI\WindowUtils.cs" />
+    <Compile Include="Utilities\Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ResourceHelper.cs" />
-    <Compile Include="Window.cs" />
+    <Compile Include="Utilities\ResourceHelper.cs" />
+    <Compile Include="GUI\Window.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

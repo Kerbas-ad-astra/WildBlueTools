@@ -46,6 +46,12 @@ namespace WildBlueIndustries
         float prevBlue;
         float prevLevel;
 
+        [KSPAction("Toggle Lights", KSPActionGroup.Light)]
+        public void ToggleLightsAction(KSPActionParam param)
+        {
+            ToggleAnimation();
+        }
+
         protected override void getProtoNodeValues(ConfigNode protoNode)
         {
             base.getProtoNodeValues(protoNode);

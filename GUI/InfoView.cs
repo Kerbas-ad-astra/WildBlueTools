@@ -13,12 +13,19 @@ namespace WildBlueIndustries
         public Texture moduleLabel;
 
         private Vector2 _scrollPos;
+        private string _info;
 
         public InfoView() :
         base("Module Info", 320, 400)
         {
             Resizable = false;
             _scrollPos = new Vector2(0, 0);
+        }
+
+        public override void SetVisible(bool newValue)
+        {
+            base.SetVisible(newValue);
+            _info = ModuleInfo.Replace("<br>", "\r\n");
         }
 
         protected override void DrawWindowContents(int windowId)
@@ -28,7 +35,7 @@ namespace WildBlueIndustries
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(moduleLabel, new GUILayoutOption[] { GUILayout.Width(128), GUILayout.Height(128) });
+                GUILayout.Label(_info, new GUILayoutOption[] { GUILayout.Width(128), GUILayout.Height(128) });
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }

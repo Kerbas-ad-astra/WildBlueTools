@@ -97,19 +97,6 @@ namespace WildBlueIndustries
 
             //Load the modules
             loadModulesFromTemplate(templateNode);
-
-            /*
-            //If we have module settings then we need to reset the module parameters.
-            //This will occur when the vessel is loaded into the scene.
-            if (moduleSettings.Count > 0)
-            {
-                loadModuleSettings();
-
-                //Now, clear the module settings.
-                //We do this so that field reconfigurations don't try to reset parameters on modules that might no longer exist.
-                moduleSettings.Clear();
-            }
-             */
         }
 
         protected override void getProtoNodeValues(ConfigNode protoNode)
@@ -141,6 +128,48 @@ namespace WildBlueIndustries
         #endregion
 
         #region Helpers
+        protected void loadModuleSettings(PartModule module, ConfigNode moduleNode, int index)
+        {
+            if (HighLogic.LoadedSceneIsFlight == false)
+                return;
+
+            Log("loadModuleSettings called");
+            if (index > moduleSettings.Count - 1)
+            {
+                Log("Index > moduleSettings.Count!");
+                return;
+            }
+            ConfigNode nodeSettings = moduleSettings[index];
+
+            //Add any missing settings
+            foreach (ConfigNode.Value nodeValue in moduleNode.values)
+            {
+                if (nodeSettings.HasValue(nodeValue.name) == false)
+                    nodeSettings.AddValue(nodeValue.name, nodeValue.value);
+            }
+
+            //nodeSettings may have persistent fields. If so, then set them.
+            foreach (ConfigNode.Value nodeValue in nodeSettings.values)
+            {
+                try
+                {
+                    if (nodeValue.name != "name")
+                        moduleNode.SetValue(nodeValue.name, nodeValue.value, true);
+
+                    if (module.Fields[nodeValue.name] != null)
+                    {
+                        Log("Set Field " + nodeValue.name + " to " + nodeValue.value);
+                        module.Fields[nodeValue.name].Read(nodeValue.value, module);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log("Encountered an exception while setting values for " + moduleNode.GetValue("name") + ": " + ex);
+                    continue;
+                }
+            }
+        }
+
         protected void loadModuleSettings(PartModule module, int index)
         {
             Log("loadModuleSettings called");
@@ -162,45 +191,6 @@ namespace WildBlueIndustries
                 }
             }
         }
-
-        /*
-        protected void loadModuleSettings()
-        {
-            Log("loadModuleSettings called");
-            PartModule module = null;
-            ConfigNode nodeSettings = null;
-
-            //We know that the order of the added modules matches the order of WBIModule nodes that we saved during loading.
-            //We also know that the number of module nodes should match the number of modules added.
-            Log("Added modules count: " + addedPartModules.Count + " added node settings count: " + moduleSettings.Count);
-            if (addedPartModules.Count != moduleSettings.Count)
-            {
-                Log("Mismatched settings to added PartModules!");
-                return;
-            }
-
-            //Now go through each added module and set its parameters
-            for (int curIndex = 0; curIndex < addedPartModules.Count; curIndex++)
-            {
-                module = addedPartModules[curIndex];
-                nodeSettings = moduleSettings[curIndex];
-
-                //nodeSettings may have persistent fields. If so, then set them.
-                foreach (ConfigNode.Value nodeValue in nodeSettings.values)
-                {
-                    if (nodeValue.name != "name")
-                    {
-                        if (module.Fields[nodeValue.name] != null)
-                            module.Fields[nodeValue.name].Read(nodeValue.value, module);
-                        Log("Set " + nodeValue.name + " to " + nodeValue.value);
-                    }
-                }
-
-                //Modules also have events that are active, gui active, and so on.
-                //If we have any of those then we need to set them as well.
-            }
-        }
-        */
 
         protected void fixModuleIndexes()
         {
@@ -316,13 +306,48 @@ namespace WildBlueIndustries
                             continue;
                         }
                         awakenMethod.Invoke(module, parameters);
+                        module.OnAwake();
+                        module.OnActive();
                         
                         //Load up the config
+                        loadModuleSettings(module, moduleNode, addedPartModules.Count - 1);
+                        Log("Calling module.Load");
                         module.Load(moduleNode);
-                        loadModuleSettings(module, addedPartModules.Count - 1);
 
                         //Start it up
-                        module.OnStart(StartState.None);
+                        Log("calling module.OnStart");
+                        if (HighLogic.LoadedSceneIsFlight)
+                        {
+                            switch (this.part.vessel.situation)
+                            {
+                                case Vessel.Situations.ORBITING:
+                                    module.OnStart(PartModule.StartState.Orbital);
+                                    break;
+                                case Vessel.Situations.LANDED:
+                                    module.OnStart(PartModule.StartState.Landed);
+                                    break;
+                                case Vessel.Situations.SPLASHED:
+                                    module.OnStart(PartModule.StartState.Splashed);
+                                    break;
+
+                                case Vessel.Situations.SUB_ORBITAL:
+                                    module.OnStart(PartModule.StartState.SubOrbital);
+                                    break;
+
+                                case Vessel.Situations.FLYING:
+                                    module.OnStart(PartModule.StartState.Flying);
+                                    break;
+
+                                default:
+                                    module.OnStart(PartModule.StartState.None);
+                                    break;
+                            }
+                        }
+
+                        else
+                        {
+                            module.OnStart(PartModule.StartState.None);
+                        }
 
                         Log("Added " + moduleName);
                     }

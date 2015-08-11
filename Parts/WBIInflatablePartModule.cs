@@ -175,6 +175,7 @@ namespace WildBlueIndustries
                 //Set toggle button
                 Events["ToggleInflation"].guiActive = true;
                 Events["ToggleInflation"].guiActiveEditor = true;
+                Events["ToggleInflation"].guiActiveUnfocused = true;
 
                 if (isDeployed)
                 {
@@ -204,6 +205,7 @@ namespace WildBlueIndustries
             {
                 Events["ToggleInflation"].guiActive = false;
                 Events["ToggleInflation"].guiActiveEditor = false;
+                Events["ToggleInflation"].guiActiveUnfocused = false;
             }
         }
 

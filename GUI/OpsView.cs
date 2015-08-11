@@ -65,7 +65,7 @@ namespace WildBlueIndustries
         public Texture moduleLabel;
 
         public OpsView() :
-        base("Operations Manager", 600, 330)
+        base("<color=white>Operations Manager</color>", 600, 330)
         {
             Resizable = false;
             _scrollPosConverters = new Vector2(0, 0);
@@ -82,7 +82,7 @@ namespace WildBlueIndustries
             set
             {
                 _shortName = value;
-                moduleInfo = getModuleInfoDelegate(_shortName);
+                moduleInfo = getModuleInfoDelegate(_shortName).Replace("<br>", "\r\n");
                 moduleLabel = getModuleLogoDelegate(shortName);
             }
         }
@@ -122,7 +122,7 @@ namespace WildBlueIndustries
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
 
-            GUILayout.Label("Current: " + shortName);
+            GUILayout.Label("<color=white>Current: " + shortName +"</color>");
 
             if (teplateHasOpsWindowDelegate != null)
             {
@@ -196,7 +196,7 @@ namespace WildBlueIndustries
             foreach (PartResource resource in this.part.Resources)
             {
                 GUILayout.Label(resource.resourceName);
-                GUILayout.Label(String.Format("{0:#,##0.00}/{1:#,##0.00}", resource.amount, resource.maxAmount));
+                GUILayout.Label(String.Format("<color=white>{0:#,##0.00}/{1:#,##0.00}</color>", resource.amount, resource.maxAmount));
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
@@ -266,15 +266,15 @@ namespace WildBlueIndustries
             if (techResearched == false)
             {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label("This module cannot be reconfigured. Research more technology.");
+                GUILayout.Label("<color=yellow>This module cannot be reconfigured. Research more technology.</color>");
                 GUILayout.FlexibleSpace();
                 return;
             }
 
             string moduleInfo;
 
-            GUILayout.Label("Current Preview: " + previewName);
-            GUILayout.Label("Reconfiguration Cost: " + cost + " RocketParts");
+            GUILayout.Label("<color=white>Current Preview: " + previewName + "</color>");
+            GUILayout.Label("<color=white>Reconfiguration Cost: " + cost + " RocketParts</color>");
 
             //Make sure we have something to display
             if (string.IsNullOrEmpty(previewName))
@@ -330,13 +330,8 @@ namespace WildBlueIndustries
             }
 
             if (GUILayout.Button("Reconfigure"))
-            {
-                if (nextName == shortName)
-                    ScreenMessages.PostScreenMessage("No need to redecorate to the same module type.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                changeModuleTypeDelegate(previewName);
 
-                else if (changeModuleTypeDelegate != null)
-                    changeModuleTypeDelegate(previewName);
-            }
             GUILayout.EndHorizontal();
         }
 
@@ -359,7 +354,7 @@ namespace WildBlueIndustries
 
                 //Toggle, name and status message
                 if (!HighLogic.LoadedSceneIsEditor)
-                    isActivated = GUILayout.Toggle(isActivated, converterName + ": " + converterStatus);
+                    isActivated = GUILayout.Toggle(isActivated, string.Format(converterName + "({0:f1}%): ", converter.Efficiency * 100f) + converterStatus);
                 else
                     isActivated = GUILayout.Toggle(isActivated, converterName);
 
@@ -375,7 +370,7 @@ namespace WildBlueIndustries
             }
 
             if (converters.Count == 0)
-                GUILayout.Label("No processors are present in this configuration.");
+                GUILayout.Label("<color=yellow>No processors are present in this configuration.</color>");
 
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
