@@ -454,13 +454,6 @@ namespace WildBlueIndustries
                 value = templatesModel.templateNodes[index].GetValue("shortName");
                 moduleOpsView.prevName = value;
             }
-
-            if (templatesModel.templateNodes.Length == 1)
-            {
-                Events["ManageOperations"].guiActiveUnfocused = false;
-                Events["ManageOperations"].guiActiveEditor = false;
-                Events["ManageOperations"].guiActive = false;
-            }
         }
         #endregion
 

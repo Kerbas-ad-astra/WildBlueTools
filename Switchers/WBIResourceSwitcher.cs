@@ -609,7 +609,7 @@ namespace WildBlueIndustries
 
             //Init the module GUI
             initModuleGUI();
-
+            
             ShowDecals(decalsVisible);
         }
 
