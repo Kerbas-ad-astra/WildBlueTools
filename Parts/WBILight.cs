@@ -123,6 +123,36 @@ namespace WildBlueIndustries
                 setupLights();
         }
 
+        public void TurnOnLights()
+        {
+            //If the part has an inflatable part and it's not deployed,
+            //then don't allow the lights to come on.
+            WBIInflatablePartModule inflatable = this.part.FindModuleImplementing<WBIInflatablePartModule>();
+            if (inflatable != null)
+            {
+                if (inflatable.isDeployed == false)
+                {
+                    ScreenMessages.PostScreenMessage("Cannot turn on the lights until the module is inflated.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    return;
+                }
+            }
+
+            //Play animation for current state
+            PlayAnimation(isDeployed);
+            isDeployed = true;
+            Events["ToggleAnimation"].guiName = endEventGUIName;
+            setupLights();
+        }
+
+        public void TurnOffLights()
+        {
+            //Play animation for current state
+            PlayAnimation(isDeployed);
+            isDeployed = false;
+            Events["ToggleAnimation"].guiName = startEventGUIName;
+            setupLights();
+        }
+
         public override void ToggleAnimation()
         {
             //If the part has an inflatable part and it's not deployed,

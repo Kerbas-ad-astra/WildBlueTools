@@ -7,7 +7,7 @@ using KSP.IO;
 
 namespace WildBlueIndustries
 {
-    class InfoView : Window<OpsView>
+    public class InfoView : Window<OpsView>
     {
         public string ModuleInfo;
         public Texture moduleLabel;
@@ -35,11 +35,11 @@ namespace WildBlueIndustries
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(_info, new GUILayoutOption[] { GUILayout.Width(128), GUILayout.Height(128) });
+                GUILayout.Label(moduleLabel, new GUILayoutOption[] { GUILayout.Width(128), GUILayout.Height(128) });
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Label(ModuleInfo);
+            GUILayout.Label(_info);
             GUILayout.EndScrollView();
         }
 

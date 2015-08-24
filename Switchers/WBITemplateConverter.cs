@@ -20,6 +20,7 @@ namespace WildBlueIndustries
 {
     public class WBITemplateConverter : ExtendedPartModule
     {
+        private const string kNeedAdditionalParts = "Insufficient resources to reconfigure the module. You need an additional {0:f2} {1:s} to reconfigure.";
         private const string kInsufficientParts = "Insufficient resources to reconfigure the module. You need a total of {0:f2} {1:s} to reconfigure.";
         private const string kInsufficientSkill = "Insufficient skill to reconfigure the module.";
         private const string kInsufficientCrew = "Cannot reconfigure. Either crew the module or perform an EVA.";
@@ -58,7 +59,7 @@ namespace WildBlueIndustries
         public static bool checkForSkill = true;
 
         protected float recycleBase = 0.7f;
-        protected float baseSkillModifier = 0.04f;
+        protected float baseSkillModifier = 0.05f;
         protected float reconfigureCost;
         protected float reconfigureCostModifier;
         protected WBIResourceSwitcher switcher;
@@ -73,7 +74,7 @@ namespace WildBlueIndustries
         }
 
         [KSPAction("Toggle Template")]
-        public virtual void ToggleResearchAction(KSPActionParam param)
+        public virtual void ToggleTemplateAction(KSPActionParam param)
         {
             ToggleTemplate();
         }
@@ -116,11 +117,12 @@ namespace WildBlueIndustries
 
         protected bool payPartsCost()
         {
+            double amount = resourceCost * (1.0 - reconfigureCostModifier);
             PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceRequired);
-            double partsPaid = this.part.RequestResource(definition.id, reconfigureCost, ResourceFlowMode.ALL_VESSEL);
+            double partsPaid = this.part.RequestResource(definition.id, amount, ResourceFlowMode.ALL_VESSEL);
 
             //Could we afford it?
-            if (Math.Abs(partsPaid) / Math.Abs(reconfigureCost) < 0.999f)
+            if (Math.Abs(partsPaid) / Math.Abs(amount) < 0.999f)
             {
                 //Put back what we took
                 this.part.RequestResource(definition.id, -partsPaid, ResourceFlowMode.ALL_VESSEL);
@@ -137,36 +139,28 @@ namespace WildBlueIndustries
             if (!payForReconfigure)
                 return true;
             bool canAffordCost = false;
+            string notEnoughPartsMsg;
 
             PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceRequired);
             Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
-            float recycleAmount = resourceCost;
+
+            calculateRemodelCostModifier();
+            double amount = resourceCost * (1.0 - reconfigureCostModifier);
 
             //An inflatable part that hasn't been inflated yet is an automatic pass.
             if (switcher.isInflatable && !switcher.isDeployed)
                 return true;
 
-            //calculate the amount of parts that we can recycle.
-            recycleAmount *= calculateRecycleAmount();
-
-            //Now recalculate resourceCost, accounting for the parts we can recycle.
-            //A negative value means we'll get parts back, a positive number means we pay additional parts.
-            //Ex: current configuration takes 1200 parts. new configuration takes 900.
-            //We recycle 90% of the current configuration (1080 parts).
-            //The reconfigure cost is: 900 - 1080 = -180 parts
-            //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
-            reconfigureCost = resourceCost - recycleAmount;
-
             //now check to make sure the vessel has enough parts.
             if (resource == null)
                 canAffordCost = false;
 
-            else if (resource.amount < reconfigureCost)
+            else if (resource.amount < amount)
                 canAffordCost = false;
 
             if (!canAffordCost)
             {
-                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, resourceRequired);
+                notEnoughPartsMsg = string.Format(kInsufficientParts, amount, resourceRequired);
                 ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return false;
             }

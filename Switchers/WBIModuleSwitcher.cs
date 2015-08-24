@@ -168,6 +168,23 @@ namespace WildBlueIndustries
                     continue;
                 }
             }
+
+            //Actions
+            if (nodeSettings.HasNode("ACTIONS"))
+            {
+                ConfigNode actionsNode = nodeSettings.GetNode("ACTIONS");
+                BaseAction action;
+
+                foreach (ConfigNode node in actionsNode.nodes)
+                {
+                    action = module.Actions[node.name];
+                    if (action != null)
+                    {
+                        action.actionGroup = (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), node.GetValue("actionGroup"));
+                        Log("Set " + node.name + " to " + action.actionGroup);
+                    }
+                }
+            }
         }
 
         protected void loadModuleSettings(PartModule module, int index)
@@ -248,6 +265,32 @@ namespace WildBlueIndustries
                 }
         }
 
+        protected bool canLoadModule(ConfigNode node)
+        {
+            string value;
+
+            //If we are in career mode, make sure we have unlocked the tech node.
+            if (ResearchAndDevelopment.Instance != null)
+            {
+                value = node.GetValue("TechRequired");
+                if (!string.IsNullOrEmpty(value) && (HighLogic.CurrentGame.Mode == Game.Modes.CAREER || HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX))
+                {
+                    if (ResearchAndDevelopment.GetTechnologyState(value) != RDTech.State.Available)
+                        return false;
+                }
+            }
+
+            //Now check for required mod
+            value = node.GetValue("needs");
+            if (!string.IsNullOrEmpty(value))
+            {
+                if (TemplatesModel.CheckNeeds(value) != EInvalidTemplateReasons.TemplateIsValid)
+                    return false;
+            }
+
+            return true;
+        }
+
         protected virtual void loadModulesFromTemplate(ConfigNode templateNode)
         {
             Log("loadModulesFromTemplate called for template: " + templateNode.GetValue("shortName"));
@@ -276,6 +319,10 @@ namespace WildBlueIndustries
                 {
                     moduleName = moduleNode.GetValue("name");
                     Log("Checking " + moduleName);
+
+                    //Make sure we can load the module
+                    if (canLoadModule(moduleNode) == false)
+                        continue;
 
                     //Special case: ModuleScienceLab
                     //If we add ModuleScienceLab in the editor, even if we fix up its index for the ModuleScienceContainer,

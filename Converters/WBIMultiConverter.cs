@@ -47,10 +47,15 @@ namespace WildBlueIndustries
         public string GetModuleInfo(string templateName)
         {
             StringBuilder moduleInfo = new StringBuilder();
+            StringBuilder converterInfo = new StringBuilder();
             ConfigNode nodeTemplate = templatesModel[templateName];
             string value;
-            PartModule converter;
+            PartModule partModule;
             bool addConverterHeader = true;
+            bool includeModuleInfo = false;
+
+            if (nodeTemplate.HasValue("includeModuleInfo"))
+                includeModuleInfo = bool.Parse(nodeTemplate.GetValue("includeModuleInfo"));
 
             value = nodeTemplate.GetValue("title");
             if (!string.IsNullOrEmpty(value))
@@ -64,23 +69,35 @@ namespace WildBlueIndustries
             if (!string.IsNullOrEmpty(value))
                 moduleInfo.Append("Crew Capacity: " + nodeTemplate.GetValue("CrewCapacity") + "\r\n");
 
-            foreach (ConfigNode nodeConverter in nodeTemplate.nodes)
+            //Add just the converters
+            foreach (ConfigNode moduleNode in nodeTemplate.nodes)
             {
-                if (nodeConverter.GetValue("name") == "ModuleResourceConverter")
+                if (moduleNode.GetValue("name") == "ModuleResourceConverter")
                 {
                     if (addConverterHeader)
                     {
-                        moduleInfo.Append("\r\n<b>Conversions</b>\r\n\r\n");
+                        converterInfo.Append("\r\n<b>Conversions</b>\r\n\r\n");
                         addConverterHeader = false;
                     }
 
-                    converter = this.part.AddModule("ModuleResourceConverter");
-                    converter.Load(nodeConverter);
-                    moduleInfo.Append(converter.GetInfo());
+                    partModule = this.part.AddModule("ModuleResourceConverter");
+                    partModule.Load(moduleNode);
+                    converterInfo.Append(partModule.GetInfo());
+                    converterInfo.Append("\r\n");
+                    this.part.RemoveModule(partModule);
+                }
+
+                else if (includeModuleInfo)
+                {
+                    partModule = this.part.AddModule(moduleNode.GetValue("name"));
+                    partModule.Load(moduleNode);
+                    moduleInfo.Append(partModule.GetInfo());
                     moduleInfo.Append("\r\n");
-                    this.part.RemoveModule(converter);
+                    this.part.RemoveModule(partModule);
                 }
             }
+
+            moduleInfo.Append(converterInfo.ToString());
 
             return moduleInfo.ToString();
         }
@@ -242,6 +259,11 @@ namespace WildBlueIndustries
             }
             float partCost = float.Parse(parts);
 
+            calculateRemodelCostModifier();
+            float adjustedPartCost = partCost;
+            if (reconfigureCostModifier > 0f)
+                adjustedPartCost *= reconfigureCostModifier;
+
             //Do we pay for resources? If so, either pay the resources if we're deploying the module, or refund the recycled parts
             if (payForReconfigure)
             {
@@ -249,7 +271,7 @@ namespace WildBlueIndustries
                 if (!isDeployed)
                 {
                     //Can we afford it?
-                    if (resource == null || resource.amount < partCost)
+                    if (resource == null || resource.amount < adjustedPartCost)
                     {
                         notEnoughParts();
                         string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} RocketParts to assemble.", partCost);
@@ -259,7 +281,7 @@ namespace WildBlueIndustries
 
                     //Yup, we can afford it
                     //Pay the reconfigure cost
-                    reconfigureCost = partCost;
+                    reconfigureCost = adjustedPartCost;
                     payPartsCost();
                 }
 

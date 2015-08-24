@@ -133,6 +133,10 @@ namespace WildBlueIndustries
 
         public static EInvalidTemplateReasons CheckNeeds(string neededMod)
         {
+            string modToCheck = null;
+            bool checkInverse = false;
+            bool modFound = false;
+
             //Create the part tokens if needed
             if (partTokens == null)
             {
@@ -158,7 +162,19 @@ namespace WildBlueIndustries
             }
 
             //Now check for the required mod
-            if (partTokens.Contains(neededMod))
+            modToCheck = neededMod;
+            if (neededMod.StartsWith("!"))
+            {
+                checkInverse = true;
+                modToCheck = neededMod.Substring(1, neededMod.Length - 1);
+            }
+
+            modFound = partTokens.Contains(modToCheck);
+            if (modFound && checkInverse == false)
+                return EInvalidTemplateReasons.TemplateIsValid;
+            else if (modFound && checkInverse)
+                return EInvalidTemplateReasons.RequiredModuleNotFound;
+            else if (!modFound && checkInverse)
                 return EInvalidTemplateReasons.TemplateIsValid;
             else
                 return EInvalidTemplateReasons.RequiredModuleNotFound;

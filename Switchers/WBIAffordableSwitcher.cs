@@ -31,7 +31,7 @@ namespace WildBlueIndustries
         public static bool checkForSkill = true;
 
         protected float recycleBase = 0.7f;
-        protected float baseSkillModifier = 0.04f;
+        protected float baseSkillModifier = 0.05f;
         protected float reconfigureCost;
         protected float reconfigureCostModifier;
         protected string requriredResource;

@@ -80,7 +80,7 @@ namespace WildBlueIndustries
                 if (light != null)
                 {
                     if (light.isDeployed)
-                        light.ToggleAnimation();
+                        light.TurnOffLights();
                 }
             }
 

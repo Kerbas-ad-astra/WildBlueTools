@@ -149,6 +149,21 @@ namespace WildBlueIndustries
                     if (nodeValue.name != "name")
                         node.SetValue(nodeValue.name, nodeValue.value, true);
                 }
+                //Actions
+                if (settingsNode.HasNode("ACTIONS"))
+                {
+                    ConfigNode actionsNode = settingsNode.GetNode("ACTIONS");
+                    BaseAction action;
+
+                    foreach (ConfigNode nodeAction in actionsNode.nodes)
+                    {
+                        action = converter.Actions[nodeAction.name];
+                        if (action != null)
+                        {
+                            action.actionGroup = (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), nodeAction.GetValue("actionGroup"));
+                        }
+                    }
+                }
             }
             converter.Load(node);
 
