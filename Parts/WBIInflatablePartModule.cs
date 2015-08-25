@@ -49,6 +49,16 @@ namespace WildBlueIndustries
                 return;
             }
 
+            //make sure we don't have parts attached
+            if (isInflatable && isDeployed)
+            {
+                if (this.part.children.Count > 0)
+                {
+                    ScreenMessages.PostScreenMessage(this.part.name + " has parts attached to it. Please remove them before deflating.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    return;
+                }
+            }
+
             //Play animation for current state
             animationStarted = true;
             PlayAnimation(isDeployed);
@@ -64,6 +74,14 @@ namespace WildBlueIndustries
             {
                 this.part.CrewCapacity = 0;
                 Events["ToggleInflation"].guiName = startEventGUIName;
+
+                //Turn off the lights if deflating the module.
+                WBILight light = this.part.FindModuleImplementing<WBILight>();
+                if (light != null)
+                {
+                    if (light.isDeployed)
+                        light.TurnOffLights();
+                }
             }
 
             Log("Animation toggled new gui name: " + Events["ToggleInflation"].guiName);
@@ -175,6 +193,7 @@ namespace WildBlueIndustries
                 //Set toggle button
                 Events["ToggleInflation"].guiActive = true;
                 Events["ToggleInflation"].guiActiveEditor = true;
+                Events["ToggleInflation"].guiActiveUnfocused = true;
 
                 if (isDeployed)
                 {
@@ -204,6 +223,7 @@ namespace WildBlueIndustries
             {
                 Events["ToggleInflation"].guiActive = false;
                 Events["ToggleInflation"].guiActiveEditor = false;
+                Events["ToggleInflation"].guiActiveUnfocused = false;
             }
         }
 

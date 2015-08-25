@@ -18,38 +18,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public class WBITemplateConverter : ExtendedPartModule
+    public class WBIAffordableSwitcher : WBIModuleSwitcher
     {
         private const string kInsufficientParts = "Insufficient resources to reconfigure the module. You need a total of {0:f2} {1:s} to reconfigure.";
         private const string kInsufficientSkill = "Insufficient skill to reconfigure the module.";
         private const string kInsufficientCrew = "Cannot reconfigure. Either crew the module or perform an EVA.";
-
-        //Currently you can support multiple templateNodes, with each node separated by a semicolon.
-        //This module requires you to pay to switch between template nodes. For instance, pay to switch between
-        //storage and using the storage unit as a battery, or pay to switch between storage and greenhouse.
-        [KSPField]
-        public string primaryTemplate;
-
-        [KSPField]
-        public string secondaryTemplate;
-
-        [KSPField]
-        public string primaryTemplateGUIName;
-
-        [KSPField]
-        public string secondaryTemplateGUIName;
-
-        [KSPField]
-        public string skillRequired;
-
-        [KSPField]
-        public string resourceRequired = "RocketParts";
-
-        [KSPField]
-        public float resourceCost;
-
-        [KSPField(isPersistant = true)]
-        public bool usePrimaryTemplate = true;
 
         //Should the player pay to reconfigure the module?
         public static bool payForReconfigure = true;
@@ -58,65 +31,18 @@ namespace WildBlueIndustries
         public static bool checkForSkill = true;
 
         protected float recycleBase = 0.7f;
-        protected float baseSkillModifier = 0.04f;
+        protected float baseSkillModifier = 0.05f;
         protected float reconfigureCost;
         protected float reconfigureCostModifier;
-        protected WBIResourceSwitcher switcher;
+        protected string requriredResource;
 
-        public override void OnStart(StartState state)
+        protected override bool payPartsCost()
         {
-            base.OnStart(state);
-
-            switcher = this.part.FindModuleImplementing<WBIResourceSwitcher>();
-
-            updateTemplate();
-        }
-
-        [KSPAction("Toggle Template")]
-        public virtual void ToggleResearchAction(KSPActionParam param)
-        {
-            ToggleTemplate();
-        }
-
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiActiveUnfocused = true, unfocusedRange = 3.0f, guiName = "Toggle Template")]
-        public void ToggleTemplate()
-        {
-            if (canAffordReconfigure() && hasSufficientSkill())
-            {
-                usePrimaryTemplate = !usePrimaryTemplate;
-
-                updateTemplate();
-            }
-        }
-
-        protected void updateTemplate()
-        {
-            string templateType;
-
-            if (usePrimaryTemplate)
-            {
-                templateType = primaryTemplate;
-                Events["ToggleTemplate"].guiName = secondaryTemplateGUIName;
-            }
-
-            else
-            {
-                templateType = secondaryTemplate;
-                Events["ToggleTemplate"].guiName = primaryTemplateGUIName;
-            }
-
-            if (switcher.templateNodes != templateType)
-            {
-                switcher.templateNodes = templateType;
-                switcher.CurrentTemplateIndex = 0;
-                switcher.initTemplates();
-                switcher.ReloadTemplate();
-            }
-        }
-
-        protected bool payPartsCost()
-        {
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceRequired);
+            if (HighLogic.LoadedSceneIsFlight == false)
+                return true;
+            if (!payForReconfigure)
+                return true;
+            PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
             double partsPaid = this.part.RequestResource(definition.id, reconfigureCost, ResourceFlowMode.ALL_VESSEL);
 
             //Could we afford it?
@@ -130,43 +56,55 @@ namespace WildBlueIndustries
             return true;
         }
 
-        protected bool canAffordReconfigure()
+        protected override bool canAffordReconfigure(string templateName)
         {
             if (HighLogic.LoadedSceneIsFlight == false)
                 return true;
             if (!payForReconfigure)
                 return true;
+            string value;
             bool canAffordCost = false;
 
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceRequired);
-            Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
-            float recycleAmount = resourceCost;
+            requriredResource = templatesModel[templateName].GetValue("rocketParts");
+            if (string.IsNullOrEmpty(requriredResource) == false)
+            {
+                float reconfigureAmount = float.Parse(requriredResource);
+                PartResourceDefinition definition = ResourceHelper.DefinitionForResource(requriredResource);
+                Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
 
-            //An inflatable part that hasn't been inflated yet is an automatic pass.
-            if (switcher.isInflatable && !switcher.isDeployed)
-                return true;
+                //An inflatable part that hasn't been inflated yet is an automatic pass.
+                if (isInflatable && !isDeployed)
+                    return true;
 
-            //calculate the amount of parts that we can recycle.
-            recycleAmount *= calculateRecycleAmount();
+                //Get the current template's rocket part cost.
+                value = CurrentTemplate.GetValue(requriredResource);
+                if (string.IsNullOrEmpty(value) == false)
+                {
+                    float recycleAmount = float.Parse(value);
 
-            //Now recalculate resourceCost, accounting for the parts we can recycle.
-            //A negative value means we'll get parts back, a positive number means we pay additional parts.
-            //Ex: current configuration takes 1200 parts. new configuration takes 900.
-            //We recycle 90% of the current configuration (1080 parts).
-            //The reconfigure cost is: 900 - 1080 = -180 parts
-            //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
-            reconfigureCost = resourceCost - recycleAmount;
+                    //calculate the amount of parts that we can recycle.
+                    recycleAmount *= calculateRecycleAmount();
 
-            //now check to make sure the vessel has enough parts.
-            if (resource == null)
-                canAffordCost = false;
+                    //Now recalculate rocketPartCost, accounting for the parts we can recycle.
+                    //A negative value means we'll get parts back, a positive number means we pay additional parts.
+                    //Ex: current configuration takes 1200 parts. new configuration takes 900.
+                    //We recycle 90% of the current configuration (1080 parts).
+                    //The reconfigure cost is: 900 - 1080 = -180 parts
+                    //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
+                    reconfigureCost = reconfigureAmount - recycleAmount;
+                }
 
-            else if (resource.amount < reconfigureCost)
-                canAffordCost = false;
+                //now check to make sure the vessel has enough parts.
+                if (resource == null)
+                    canAffordCost =  false;
+
+                else if (resource.amount < reconfigureCost)
+                    canAffordCost =  false;
+            }
 
             if (!canAffordCost)
             {
-                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, resourceRequired);
+                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, requriredResource);
                 ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return false;
             }
@@ -174,12 +112,13 @@ namespace WildBlueIndustries
             return true;
         }
 
-        protected bool hasSufficientSkill()
+        protected override bool hasSufficientSkill(string templateName)
         {
             if (HighLogic.LoadedSceneIsFlight == false)
                 return true;
             if (!checkForSkill)
                 return true;
+            string skillRequired = templatesModel[templateName].GetValue("reconfigureSkill");
             if (string.IsNullOrEmpty(skillRequired))
                 return true;
             bool hasAtLeastOneCrew = false;

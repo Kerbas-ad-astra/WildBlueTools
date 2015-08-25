@@ -273,13 +273,24 @@ namespace WildBlueIndustries
             //Update the resource panel
             if (HighLogic.LoadedSceneIsFlight && ResourceDisplay.Instance != null)
             {
-                ResourceDisplay.Instance.Refresh();
-                ResourceDisplay.Instance.Update();
+                try
+                {
+                    ResourceDisplay.Instance.Refresh();
+                    ResourceDisplay.Instance.Update();
+                }
+                catch (Exception ex)
+                {
+                    Log("Exception while trying to update resource panel: " + ex.ToString());
+                }
             }
         }
 
         public virtual void RedecorateModule(bool payForRedecoration = true, bool loadTemplateResources = true)
         {
+            double maxAmount = 0;
+            string resourceName = "";
+            float capacityModifier = capacityFactor;
+
             try
             {
                 Log("RedecorateModule called. payForRedecoration: " + payForRedecoration.ToString() + " loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
@@ -291,6 +302,9 @@ namespace WildBlueIndustries
                 ConfigNode nodeTemplate = templatesModel[CurrentTemplateIndex];
                 if (nodeTemplate == null)
                     return;
+
+                if (nodeTemplate.HasValue("capacityFactor"))
+                    capacityModifier = float.Parse(nodeTemplate.GetValue("capacityFactor"));
 
                 //Get max resource amounts if the part is inflatable.
                 if (isInflatable)
@@ -305,7 +319,11 @@ namespace WildBlueIndustries
                         //Set the max amounts into our dictionary.
                         foreach (ConfigNode resourceNode in templateResourceNodes)
                         {
-                            resourceMaxAmounts.Add(resourceNode.GetValue("name"), double.Parse(resourceNode.GetValue("maxAmount")) * capacityFactor);
+                            resourceName = resourceNode.GetValue("name");
+                            maxAmount = double.Parse(resourceNode.GetValue("maxAmount")) * capacityModifier;
+
+                            if (resourceMaxAmounts.ContainsKey(resourceName) == false)
+                                resourceMaxAmounts.Add(resourceName, maxAmount);
                         }
                     }
                 }
@@ -373,10 +391,8 @@ namespace WildBlueIndustries
                 {
                     if (resourceMaxAmounts.ContainsKey(resource.resourceName))
                     {
-                        Log("resource " + resource.resourceName + " found.");
                         resource.amount = 0;
                         resource.maxAmount = resourceMaxAmounts[resource.resourceName];
-                        Log("max amount: " + resourceMaxAmounts[resource.resourceName]);
                     }
                 }
 
@@ -609,7 +625,7 @@ namespace WildBlueIndustries
 
             //Init the module GUI
             initModuleGUI();
-
+            
             ShowDecals(decalsVisible);
         }
 
@@ -625,6 +641,7 @@ namespace WildBlueIndustries
 
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
             Log("template: " + nodeTemplate);
+            Log("capacityFactor: " + capacityFactor);
             ConfigNode[] templateResourceNodes = nodeTemplate.GetNodes("RESOURCE");
             if (templateResourceNodes == null)
             {
@@ -657,6 +674,9 @@ namespace WildBlueIndustries
             Log("Resources cleared");
 
             //Set capacityModifier if there is an override for the template
+            if (nodeTemplate.HasValue("capacityFactor"))
+                capacityModifier = float.Parse(nodeTemplate.GetValue("capacityFactor"));
+
             value = nodeTemplate.GetValue("shortName");
             if (parameterOverrides.ContainsKey(value))
             {
@@ -671,6 +691,7 @@ namespace WildBlueIndustries
 
             //Add resources from template
             Log("template resource count: " + templateResourceNodes.Length);
+            Log("capacityModifier: " + capacityModifier);
             foreach (ConfigNode resourceNode in templateResourceNodes)
             {
                 //If we kept the resource, then skip this template resource.

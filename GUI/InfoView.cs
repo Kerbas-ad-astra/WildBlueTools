@@ -7,18 +7,25 @@ using KSP.IO;
 
 namespace WildBlueIndustries
 {
-    class InfoView : Window<OpsView>
+    public class InfoView : Window<OpsView>
     {
         public string ModuleInfo;
         public Texture moduleLabel;
 
         private Vector2 _scrollPos;
+        private string _info;
 
         public InfoView() :
         base("Module Info", 320, 400)
         {
             Resizable = false;
             _scrollPos = new Vector2(0, 0);
+        }
+
+        public override void SetVisible(bool newValue)
+        {
+            base.SetVisible(newValue);
+            _info = ModuleInfo.Replace("<br>", "\r\n");
         }
 
         protected override void DrawWindowContents(int windowId)
@@ -32,7 +39,7 @@ namespace WildBlueIndustries
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Label(ModuleInfo);
+            GUILayout.Label(_info);
             GUILayout.EndScrollView();
         }
 
