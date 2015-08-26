@@ -69,7 +69,7 @@ namespace WildBlueIndustries
             if (string.IsNullOrEmpty(requriredResource) == false)
             {
                 float reconfigureAmount = float.Parse(requriredResource);
-                PartResourceDefinition definition = ResourceHelper.DefinitionForResource(requriredResource);
+                PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
                 Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
 
                 //An inflatable part that hasn't been inflated yet is an automatic pass.
@@ -77,7 +77,7 @@ namespace WildBlueIndustries
                     return true;
 
                 //Get the current template's rocket part cost.
-                value = CurrentTemplate.GetValue(requriredResource);
+                value = CurrentTemplate.GetValue("rocketParts");
                 if (string.IsNullOrEmpty(value) == false)
                 {
                     float recycleAmount = float.Parse(value);
@@ -100,11 +100,14 @@ namespace WildBlueIndustries
 
                 else if (resource.amount < reconfigureCost)
                     canAffordCost =  false;
+
+                else
+                    canAffordCost = true;
             }
 
             if (!canAffordCost)
             {
-                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, requriredResource);
+                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, "RocketParts");
                 ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return false;
             }
