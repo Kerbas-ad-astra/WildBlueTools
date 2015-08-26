@@ -291,10 +291,15 @@ namespace WildBlueIndustries
                     float recycleAmount = partCost * calculateRecycleAmount();
 
                     //Do we have sufficient space in the vessel to store the recycled parts?
-                    if (resource.maxAmount - resource.amount < recycleAmount)
+                    float availableStorage = (float)(resource.maxAmount - resource.amount);
+
+                    if(availableStorage < recycleAmount)
                     {
-                        ScreenMessages.PostScreenMessage("Cannot deflate the module. Insufficient space to store the recycled parts.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                        return;
+                        float amountLost = recycleAmount - availableStorage;
+                        ScreenMessages.PostScreenMessage(string.Format("Module deflated, {0:f2} {1:s} lost due to insufficient storage.", amountLost, "RocketParts"), 5.0f, ScreenMessageStyle.UPPER_CENTER);
+
+                        //We'll only recycle what we have room to store.
+                        recycleAmount = availableStorage;
                     }
 
                     //Yup, we have the space
