@@ -197,15 +197,12 @@ namespace WildBlueIndustries
                 }
             }
 
-            //No kerbal on EVA. Check the part for the highest ranking kerbal onboard with the required skill.
-            if (this.part.CrewCapacity > 0)
+            //No kerbal on EVA. Check the vessel for the highest ranking kerbal onboard with the required skill.
+            foreach (ProtoCrewMember protoCrew in this.vessel.GetVesselCrew())
             {
-                foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
-                {
-                    if (protoCrew.experienceTrait.TypeName == skillRequired)
-                        if (protoCrew.experienceLevel > highestLevel)
-                            highestLevel = protoCrew.experienceLevel;
-                }
+                if (protoCrew.experienceTrait.TypeName == skillRequired)
+                    if (protoCrew.experienceLevel > highestLevel)
+                        highestLevel = protoCrew.experienceLevel;
             }
 
             reconfigureCostModifier = baseSkillModifier * highestLevel;
