@@ -38,12 +38,14 @@ namespace WildBlueIndustries
 
         protected override bool payPartsCost()
         {
+            Log("FRED payPartsCost called, reconfigureCost: " + reconfigureCost);
             if (HighLogic.LoadedSceneIsFlight == false)
                 return true;
             if (!payForReconfigure)
                 return true;
             PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
             double partsPaid = this.part.RequestResource(definition.id, reconfigureCost, ResourceFlowMode.ALL_VESSEL);
+            Log("FRED partsPaid: " + partsPaid);
 
             //Could we afford it?
             if (Math.Abs(partsPaid) / Math.Abs(reconfigureCost) < 0.999f)
@@ -153,14 +155,8 @@ namespace WildBlueIndustries
                 return true;
             }
 
-            //Now check the part itself
-            if (this.part.CrewCapacity == 0)
-            {
-                ScreenMessages.PostScreenMessage(kInsufficientCrew, 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                return false;
-            }
-
-            foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
+            //Now check the vessel
+            foreach (ProtoCrewMember protoCrew in this.part.vessel.GetVesselCrew())
             {
                 if (protoCrew.experienceTrait.TypeName == skillRequired)
                 {

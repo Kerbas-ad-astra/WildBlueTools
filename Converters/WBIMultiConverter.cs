@@ -264,6 +264,7 @@ namespace WildBlueIndustries
             if (reconfigureCostModifier > 0f)
                 adjustedPartCost *= reconfigureCostModifier;
 
+            Log("FRED payForReconfigure: " + payForReconfigure);
             //Do we pay for resources? If so, either pay the resources if we're deploying the module, or refund the recycled parts
             if (payForReconfigure)
             {
@@ -320,10 +321,21 @@ namespace WildBlueIndustries
                 }
             }
 
-            // Not paying for reconfiguration, 
+            // Not paying for reconfiguration, check for skill requirements
             else
             {
-                base.ToggleInflation();
+                if (checkForSkill)
+                {
+                    if (hasSufficientSkill(CurrentTemplateName))
+                        base.ToggleInflation();
+                    else
+                        return;
+                }
+
+                else
+                {
+                    base.ToggleInflation();
+                }
             }
         }
 
