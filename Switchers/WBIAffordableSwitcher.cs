@@ -38,12 +38,14 @@ namespace WildBlueIndustries
 
         protected override bool payPartsCost()
         {
+            Log("FRED payPartsCost called, reconfigureCost: " + reconfigureCost);
             if (HighLogic.LoadedSceneIsFlight == false)
                 return true;
             if (!payForReconfigure)
                 return true;
             PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
             double partsPaid = this.part.RequestResource(definition.id, reconfigureCost, ResourceFlowMode.ALL_VESSEL);
+            Log("FRED partsPaid: " + partsPaid);
 
             //Could we afford it?
             if (Math.Abs(partsPaid) / Math.Abs(reconfigureCost) < 0.999f)
@@ -69,7 +71,7 @@ namespace WildBlueIndustries
             if (string.IsNullOrEmpty(requriredResource) == false)
             {
                 float reconfigureAmount = float.Parse(requriredResource);
-                PartResourceDefinition definition = ResourceHelper.DefinitionForResource(requriredResource);
+                PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
                 Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
 
                 //An inflatable part that hasn't been inflated yet is an automatic pass.
@@ -77,7 +79,7 @@ namespace WildBlueIndustries
                     return true;
 
                 //Get the current template's rocket part cost.
-                value = CurrentTemplate.GetValue(requriredResource);
+                value = CurrentTemplate.GetValue("rocketParts");
                 if (string.IsNullOrEmpty(value) == false)
                 {
                     float recycleAmount = float.Parse(value);
@@ -100,11 +102,14 @@ namespace WildBlueIndustries
 
                 else if (resource.amount < reconfigureCost)
                     canAffordCost =  false;
+
+                else
+                    canAffordCost = true;
             }
 
             if (!canAffordCost)
             {
-                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, requriredResource);
+                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, "RocketParts");
                 ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return false;
             }
@@ -150,14 +155,8 @@ namespace WildBlueIndustries
                 return true;
             }
 
-            //Now check the part itself
-            if (this.part.CrewCapacity == 0)
-            {
-                ScreenMessages.PostScreenMessage(kInsufficientCrew, 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                return false;
-            }
-
-            foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
+            //Now check the vessel
+            foreach (ProtoCrewMember protoCrew in this.part.vessel.GetVesselCrew())
             {
                 if (protoCrew.experienceTrait.TypeName == skillRequired)
                 {
@@ -194,15 +193,12 @@ namespace WildBlueIndustries
                 }
             }
 
-            //No kerbal on EVA. Check the part for the highest ranking kerbal onboard with the required skill.
-            if (this.part.CrewCapacity > 0)
+            //No kerbal on EVA. Check the vessel for the highest ranking kerbal onboard with the required skill.
+            foreach (ProtoCrewMember protoCrew in this.vessel.GetVesselCrew())
             {
-                foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
-                {
-                    if (protoCrew.experienceTrait.TypeName == skillRequired)
-                        if (protoCrew.experienceLevel > highestLevel)
-                            highestLevel = protoCrew.experienceLevel;
-                }
+                if (protoCrew.experienceTrait.TypeName == skillRequired)
+                    if (protoCrew.experienceLevel > highestLevel)
+                        highestLevel = protoCrew.experienceLevel;
             }
 
             reconfigureCostModifier = baseSkillModifier * highestLevel;

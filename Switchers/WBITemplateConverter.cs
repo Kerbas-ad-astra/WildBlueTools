@@ -205,14 +205,8 @@ namespace WildBlueIndustries
                 return true;
             }
 
-            //Now check the part itself
-            if (this.part.CrewCapacity == 0)
-            {
-                ScreenMessages.PostScreenMessage(kInsufficientCrew, 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                return false;
-            }
-
-            foreach (ProtoCrewMember protoCrew in this.part.protoModuleCrew)
+            //Now check the vessel itself
+            foreach (ProtoCrewMember protoCrew in this.part.vessel.GetVesselCrew())
             {
                 if (protoCrew.experienceTrait.TypeName == skillRequired)
                 {

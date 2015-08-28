@@ -264,6 +264,7 @@ namespace WildBlueIndustries
             if (reconfigureCostModifier > 0f)
                 adjustedPartCost *= reconfigureCostModifier;
 
+            Log("FRED payForReconfigure: " + payForReconfigure);
             //Do we pay for resources? If so, either pay the resources if we're deploying the module, or refund the recycled parts
             if (payForReconfigure)
             {
@@ -283,28 +284,59 @@ namespace WildBlueIndustries
                     //Pay the reconfigure cost
                     reconfigureCost = adjustedPartCost;
                     payPartsCost();
+
+                    // Toggle after payment.
+                    base.ToggleInflation();
                 }
 
-                //We are deployed, calculate the amount of parts that can be recycled.
+                //We are deployed, calculate the amount of parts that can be refunded.
                 else
                 {
-                    float recycleAmount = partCost * calculateRecycleAmount();
+                    // Toggle first in case deflate confirmation is needed, we'll check the state after the toggle.
+                    base.ToggleInflation();
 
-                    //Do we have sufficient space in the vessel to store the recycled parts?
-                    if (resource.maxAmount - resource.amount < recycleAmount)
+                    // deflateConfirmed's logic seems backward.
+                    if (!HasResources() || (HasResources() && deflateConfirmed == false))
                     {
-                        ScreenMessages.PostScreenMessage("Cannot deflate the module. Insufficient space to store the recycled parts.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                        return;
+                        // The part came from the factory configured which represents an additional resource cost. If reconfigured in the field, the difference was paid at
+                        // that time. Deflating doesn't remove any functionality, so no refund beyond the original adjusted part cost.
+                        float recycleAmount = adjustedPartCost;
+
+                        //Do we have sufficient space in the vessel to store the recycled parts?
+                        float availableStorage = (float)(resource.maxAmount - resource.amount);
+
+                        if (availableStorage < recycleAmount)
+                        {
+                            float amountLost = recycleAmount - availableStorage;
+                            ScreenMessages.PostScreenMessage(string.Format("Module deflated, {0:f2} {1:s} lost due to insufficient storage.", amountLost, "RocketParts"), 5.0f, ScreenMessageStyle.UPPER_CENTER);
+
+                            //We'll only recycle what we have room to store.
+                            recycleAmount = availableStorage;
+                        }
+
+                        //Yup, we have the space
+                        reconfigureCost = -recycleAmount;
+                        payPartsCost();
                     }
-
-                    //Yup, we have the space
-                    reconfigureCost = -recycleAmount;
-                    payPartsCost();
                 }
-
             }
 
-            base.ToggleInflation();
+            // Not paying for reconfiguration, check for skill requirements
+            else
+            {
+                if (checkForSkill)
+                {
+                    if (hasSufficientSkill(CurrentTemplateName))
+                        base.ToggleInflation();
+                    else
+                        return;
+                }
+
+                else
+                {
+                    base.ToggleInflation();
+                }
+            }
         }
 
         protected virtual void notEnoughParts()
