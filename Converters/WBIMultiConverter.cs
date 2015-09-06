@@ -264,7 +264,6 @@ namespace WildBlueIndustries
             if (reconfigureCostModifier > 0f)
                 adjustedPartCost *= reconfigureCostModifier;
 
-            Log("FRED payForReconfigure: " + payForReconfigure);
             //Do we pay for resources? If so, either pay the resources if we're deploying the module, or refund the recycled parts
             if (payForReconfigure)
             {

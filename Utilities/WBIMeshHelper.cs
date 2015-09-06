@@ -142,6 +142,12 @@ namespace WildBlueIndustries
             Events["PrevMesh"].guiActive = showGui && showPrev;
             Events["PrevMesh"].guiActiveEditor = showGui && showPrev;
 
+            if (objectTransforms.Count == 0)
+            {
+                parseObjectNames();
+                setObject(selectedObject);
+            }
+
             if (objectNames.Count > 0)
             {
                 int nextIndex = (selectedObject + 1) % this.objectNames.Count;
@@ -177,6 +183,7 @@ namespace WildBlueIndustries
                         }
                         else
                         {
+                            //Log("cannot find " + namedObjects[objectCount]);
                         }
                     }
                     if (newObjects.Count > 0) objectTransforms.Add(newObjects);
@@ -198,6 +205,12 @@ namespace WildBlueIndustries
 
         protected void setObject(int objectNumber, bool startHidden = true)
         {
+            if (objectTransforms.Count == 0)
+            {
+                Log("objectTransforms.Count = 0! Exiting");
+                return;
+            }
+
             if (startHidden)
             {
                 for (int i = 0; i < objectTransforms.Count; i++)

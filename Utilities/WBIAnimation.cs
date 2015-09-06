@@ -20,6 +20,11 @@ namespace WildBlueIndustries
 {
     public class WBIAnimation : ExtendedPartModule
     {
+        protected const int kDefaultAnimationLayer = 2;
+
+        [KSPField(isPersistant = true)]
+        public int animationLayer = kDefaultAnimationLayer;
+
         [KSPField(isPersistant = true)]
         public string animationName;
 
@@ -28,6 +33,9 @@ namespace WildBlueIndustries
 
         [KSPField(isPersistant = true)]
         public string endEventGUIName;
+
+        [KSPField(isPersistant = true)]
+        public string actionGUIName;
 
         [KSPField(isPersistant = true)]
         public bool guiIsVisible = true;
@@ -55,6 +63,12 @@ namespace WildBlueIndustries
             }
 
             Log("Animation toggled new gui name: " + Events["ToggleAnimation"].guiName);
+        }
+
+        [KSPAction("ToggleAnimation")]
+        public virtual void ToggleAnimationAction(KSPActionParam param)
+        {
+            ToggleAnimation();
         }
 
         public virtual void ToggleAnimation(bool deployed)
@@ -129,6 +143,8 @@ namespace WildBlueIndustries
             endEventGUIName = protoNode.GetValue("endEventGUIName");
 
             startEventGUIName = protoNode.GetValue("startEventGUIName");
+
+            actionGUIName = protoNode.GetValue("actionGUIName");
         }
 
         #endregion
@@ -151,11 +167,12 @@ namespace WildBlueIndustries
 
             //Set layer
             animationState = anim[animationName];
-            anim[animationName].layer = 2;
+            anim[animationName].layer = animationLayer;
 
             //Set toggle button
             Events["ToggleAnimation"].guiActive = guiIsVisible;
             Events["ToggleAnimation"].guiActiveEditor = guiIsVisible;
+            Actions["ToggleAnimationAction"].guiName = actionGUIName;
 
             if (isDeployed)
             {
