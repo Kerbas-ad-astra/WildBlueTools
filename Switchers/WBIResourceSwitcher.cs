@@ -806,12 +806,15 @@ namespace WildBlueIndustries
 
         public void ShowDecals(bool isVisible)
         {
+            if (string.IsNullOrEmpty(_logoPanelTransforms))
+                return;
+
             char[] delimiters = { ',' };
             string[] transformNames = _logoPanelTransforms.Replace(" ", "").Split(delimiters);
             Transform[] targets;
 
             //Sanity checks
-            if (transformNames == null)
+            if (transformNames == null || transformNames.Length == 0)
             {
                 Log("transformNames are null");
                 return;

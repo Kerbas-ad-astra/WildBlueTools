@@ -20,6 +20,8 @@ namespace WildBlueIndustries
 {
     public class WBILight : WBIAnimation
     {
+        protected const int kDefaultLightAnimationLayer = 3;
+
         [KSPField(isPersistant = true)]
         public double ecRequired;
 
@@ -96,7 +98,9 @@ namespace WildBlueIndustries
             base.OnStart(state);
             Animation anim = this.part.FindModelAnimators(animationName)[0];
 
-            anim[animationName].layer = 3;
+            if (animationLayer == kDefaultAnimationLayer)
+                animationLayer = kDefaultLightAnimationLayer;
+            anim[animationName].layer = animationLayer;
 
             //Find the lights
             lights = this.part.gameObject.GetComponentsInChildren<Light>();
