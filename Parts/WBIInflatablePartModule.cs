@@ -32,6 +32,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public string endEventGUIName;
 
+        [KSPField]
+        public bool overridePartAttachRestriction = false;
+
         //Helper objects
         public bool animationStarted = false;
         public bool isDeployed = false;
@@ -50,7 +53,7 @@ namespace WildBlueIndustries
             }
 
             //make sure we don't have parts attached
-            if (isInflatable && isDeployed)
+            if (isInflatable && isDeployed && !overridePartAttachRestriction)
             {
                 if (this.part.children.Count > 0)
                 {
