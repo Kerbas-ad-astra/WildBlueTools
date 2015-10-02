@@ -32,9 +32,9 @@ namespace WildBlueIndustries
     public class TransmitHelper
     {
         protected const string kNoAvailableTransmitter = "No Comms Devices on this vessel. Cannot Transmit Data.";
-        protected const string kSoldData = "<color=lime>Added <b>{0:f2}</b> Funds to your budget.</color>";
-        protected const string kPublishedData = "<color=yellow>Your Reputation has improved by <b>{0:f2}</b></color>";
-        protected const string kSciencedData = "<color=lightblue>Added <b>{0:f2}</b> Science to your budget.</color>";
+        protected const string kSoldData = "<color=lime>Transmission complete- <color=white><b>{0:f2}</b></color> Funds added!</color>";
+        protected const string kPublishedData = "<color=yellow>Transmission complete- <color=white><b>{0:f2}</b></color> Reputation added!</color>";
+        protected const string kSciencedData = "<color=lightblue>Transmission complete- <color=white><b>{0:f2}</b></color> Science added!</color>";
 
         public TransmitComplete transmitCompleteDelegate = null;
         public Part part = null;
@@ -148,24 +148,23 @@ namespace WildBlueIndustries
             TransmitItem item = transmitList[0];
             transmitList.RemoveAt(0);
 
-            if (item.science > 0f)
+            if (item.science > 0f && ResearchAndDevelopment.Instance != null)
             {
                 transmitMessage = string.Format(kSciencedData, item.science);
-                if ((HighLogic.CurrentGame.Mode == Game.Modes.CAREER || HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX)
-                    && ResearchAndDevelopment.Instance != null)
+                if ((HighLogic.CurrentGame.Mode == Game.Modes.CAREER || HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX))
                     ResearchAndDevelopment.Instance.AddScience(item.science, TransactionReasons.ScienceTransmission);
                 ScreenMessages.PostScreenMessage(transmitMessage, 5.0f, ScreenMessageStyle.UPPER_LEFT);
             }
 
-            if (item.reputation > 0f)
+            if (item.reputation > 0f && Reputation.Instance != null)
             {
                 transmitMessage = string.Format(kPublishedData, item.reputation);
-                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && Reputation.Instance != null)
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
                     Reputation.Instance.AddReputation(item.reputation, TransactionReasons.ScienceTransmission);
                 ScreenMessages.PostScreenMessage(transmitMessage, 5.0f, ScreenMessageStyle.UPPER_LEFT);
             }
 
-            if (item.funds > 0f)
+            if (item.funds > 0f && Funding.Instance != null)
             {
                 transmitMessage = string.Format(kSoldData, item.funds);
                 Funding.Instance.AddFunds(item.funds, TransactionReasons.ScienceTransmission);

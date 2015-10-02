@@ -18,25 +18,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public class WBModuleDockingNode : ModuleDockingNode
+    public class WBIDockingNodeHelper : PartModule
     {
-        [KSPEvent(guiName = "Control from Here", guiActive = true)]
+        ModuleDockingNode dockingNode;
+
+        [KSPEvent(guiName = "FFControl from Here", guiActive = true)]
         public void ControlFromHere()
         {
-            MakeReferenceTransform();
+            dockingNode.MakeReferenceTransform();
             TurnAnimationOn();
         }
 
         [KSPEvent(guiName = "Set as Target", guiActiveUnfocused = true, externalToEVAOnly = false, guiActive = false, unfocusedRange = 200f)]
         public void SetNodeTarget()
         {
-            WBModuleDockingNode dockingModule = null;
+            WBIDockingNodeHelper dockingModule = null;
 
             //Turn off all the glowing docking ports.
             foreach (Part part in this.vessel.parts)
             {
                 //See if the part has a docking module
-                dockingModule = part.FindModuleImplementing<WBModuleDockingNode>();
+                dockingModule = part.FindModuleImplementing<WBIDockingNodeHelper>();
                 if (dockingModule == null)
                     continue;
 
@@ -49,7 +51,7 @@ namespace WildBlueIndustries
             TurnAnimationOn();
 
             //And call the real SetAsTarget
-            SetAsTarget();
+            dockingNode.SetAsTarget();
         }
 
         [KSPEvent(guiName = "Unset Target", guiActiveUnfocused = true, externalToEVAOnly = false, guiActive = false, unfocusedRange = 200f)]
@@ -57,7 +59,7 @@ namespace WildBlueIndustries
         {
             TurnAnimationOff();
 
-            UnsetTarget();
+            dockingNode.UnsetTarget();
         }
 
         public void TurnAnimationOn()
@@ -90,10 +92,15 @@ namespace WildBlueIndustries
         {
             base.OnStart(st);
 
+            dockingNode = this.part.FindModuleImplementing<ModuleDockingNode>();
+
             //Hide the native events
-            Events["SetAsTarget"].guiActiveUnfocused = false;
-            Events["UnsetTarget"].guiActiveUnfocused = false;
-            Events["MakeReferenceTransform"].guiActive = false;
+            if (dockingNode != null)
+            {
+                dockingNode.Events["SetAsTarget"].guiActiveUnfocused = false;
+                dockingNode.Events["UnsetTarget"].guiActiveUnfocused = false;
+                //dockingNode.Events["MakeReferenceTransform"].guiActive = false;
+            }
         }
     }
 }
