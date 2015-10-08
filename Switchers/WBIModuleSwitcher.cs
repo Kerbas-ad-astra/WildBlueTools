@@ -362,7 +362,7 @@ namespace WildBlueIndustries
                         module.Load(moduleNode);
 
                         //Start it up
-                        Log("calling module.OnStart");
+                        Log("calling module.OnStart with state: " + this.part.vessel.situation);
                         if (HighLogic.LoadedSceneIsFlight)
                         {
                             switch (this.part.vessel.situation)
