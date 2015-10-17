@@ -24,7 +24,7 @@ namespace WildBlueIndustries
     {
         public string modName;
 
-        public bool IsPartInMod(AvailablePart availablePart)
+        public bool IsPartInCat(AvailablePart availablePart)
         {
             string[] folderNames = modName.Split(new char[] { ';' });
 
@@ -38,9 +38,10 @@ namespace WildBlueIndustries
             }
 
             foreach (string folderName in folderNames)
+            {
                 if (availablePart.partUrl.Contains(folderName))
                     return true;
-
+            }
             return false;
         }
     }
@@ -88,7 +89,7 @@ namespace WildBlueIndustries
 
                 categoryIcon = new Icon(folderName + " icon", normalIcon, selectedIcon);
                 categoryFilter = PartCategorizer.Instance.filters.Find(f => f.button.categoryName == "Filter by Function");
-                PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.IsPartInMod(p));
+                PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.IsPartInCat(p));
 
                 categoryButton = categoryFilter.button.activeButton;
                 categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);

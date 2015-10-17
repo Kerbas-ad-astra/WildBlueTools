@@ -109,8 +109,8 @@ namespace WildBlueIndustries
             if (switcher.templateNodes != templateType)
             {
                 switcher.templateNodes = templateType;
-                switcher.CurrentTemplateIndex = 0;
                 switcher.initTemplates();
+                switcher.CurrentTemplateIndex = 0;
                 switcher.ReloadTemplate();
             }
         }

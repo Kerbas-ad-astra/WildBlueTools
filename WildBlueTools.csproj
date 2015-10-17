@@ -78,6 +78,7 @@
     <Compile Include="Utilities\ResourceHelper.cs" />
     <Compile Include="GUI\Window.cs" />
     <Compile Include="Converters\WBIResourceConverter.cs" />
+    <Compile Include="Parts\WBIModuleRCS.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
