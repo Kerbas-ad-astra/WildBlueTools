@@ -26,6 +26,9 @@ namespace WildBlueIndustries
 
         public static bool IsBiomeUnlocked(Vessel vessel)
         {
+            if (vessel == null)
+                return false;
+
             //ResourceMap.Instance.IsBiomeUnlocked is borked. Need to use an alternate method...
             CBAttributeMapSO.MapAttribute biome = Utils.GetCurrentBiome(vessel);
             List<BiomeLockData> biomeLockData = ResourceScenario.Instance.gameSettings.GetBiomeLockInfo();
