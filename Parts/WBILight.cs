@@ -95,11 +95,12 @@ namespace WildBlueIndustries
 
         public override void OnStart(StartState state)
         {
+            if (animationLayer == kDefaultAnimationLayer)
+                animationLayer = kDefaultLightAnimationLayer;
+
             base.OnStart(state);
             Animation anim = this.part.FindModelAnimators(animationName)[0];
 
-            if (animationLayer == kDefaultAnimationLayer)
-                animationLayer = kDefaultLightAnimationLayer;
             anim[animationName].layer = animationLayer;
 
             //Find the lights

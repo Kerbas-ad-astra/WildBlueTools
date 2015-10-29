@@ -52,13 +52,17 @@ namespace WildBlueIndustries
                 return;
             }
 
-            //make sure we don't have parts attached
+            //make sure we don't have parts radially attached
             if (isInflatable && isDeployed && !overridePartAttachRestriction)
             {
                 if (this.part.children.Count > 0)
                 {
-                    ScreenMessages.PostScreenMessage(this.part.name + " has parts attached to it. Please remove them before deflating.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                    return;
+                    foreach (Part childPart in this.part.children)
+                        if (childPart.attachMode == AttachModes.SRF_ATTACH)
+                        {
+                            ScreenMessages.PostScreenMessage(this.part.name + " has parts attached to it. Please remove them before deflating.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                            return;
+                        }
                 }
             }
 
