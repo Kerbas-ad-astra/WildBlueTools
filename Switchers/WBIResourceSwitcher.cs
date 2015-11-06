@@ -37,6 +37,7 @@ namespace WildBlueIndustries
         protected string glowPanelName;
 
         //Name of the template nodes.
+        [KSPField(isPersistant = true)]
         public string templateNodes;
 
         //Name of the transform(s) for the colony decal.
@@ -504,7 +505,8 @@ namespace WildBlueIndustries
                 protoNode = protoPartNodes[protoNodeKey];
 
                 //Name of the nodes to use as templates
-                templateNodes = protoNode.GetValue("templateNodes");
+                if (string.IsNullOrEmpty(templateNodes))
+                    templateNodes = protoNode.GetValue("templateNodes");
 
                 //Also get template types
                 _templateTypes = protoNode.GetValue("templateTypes");
@@ -911,7 +913,8 @@ namespace WildBlueIndustries
                 fieldReconfigurable = bool.Parse(value);
 
             //Name of the nodes to use as templates
-            templateNodes = protoNode.GetValue("templateNodes");
+            if (string.IsNullOrEmpty(templateNodes))
+                templateNodes = protoNode.GetValue("templateNodes");
 
             //Also get template types
             _templateTypes = protoNode.GetValue("templateTypes");

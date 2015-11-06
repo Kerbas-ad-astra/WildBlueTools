@@ -178,8 +178,8 @@ namespace WildBlueIndustries
             Actions["ToggleAnimationAction"].guiName = actionGUIName;
 
             //Set action
-            if (string.IsNullOrEmpty(actionGroup) == false)
-                Actions["ToggleAnimationAction"].actionGroup = (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), actionGroup);
+//            if (string.IsNullOrEmpty(actionGroup) == false)
+//                Actions["ToggleAnimationAction"].actionGroup = (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), actionGroup);
 
             if (isDeployed)
             {
