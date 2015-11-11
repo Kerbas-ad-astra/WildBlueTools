@@ -66,7 +66,6 @@
     <Compile Include="Switchers\WBITemplateConverter.cs" />
     <Compile Include="Parts\WBModuleDockingNode.cs" />
     <Compile Include="Utilities\WBIAnimation.cs" />
-    <Compile Include="Parts\WBIExtendedDecoupler.cs" />
     <Compile Include="Parts\WBIInflatablePartModule.cs" />
     <Compile Include="Utilities\WBIMeshHelper.cs" />
     <Compile Include="Switchers\WBIModuleSwitcher.cs" />

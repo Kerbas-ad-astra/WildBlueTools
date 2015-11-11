@@ -64,6 +64,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public bool decalsVisible;
 
+        [KSPField(isPersistant = true)]
+        public bool fillToMaxInEditor = true;
+
         //Since not all storage containers are equal, the
         //capacityFactor is used to determine how much of the template's base resource amount
         //applies to the container.
@@ -706,7 +709,7 @@ namespace WildBlueIndustries
                 Log("Added resource: " + resource.resourceName);
 
                 //Apply the capacity factor
-                if (HighLogic.LoadedSceneIsEditor)
+                if (HighLogic.LoadedSceneIsEditor && fillToMaxInEditor == true)
                     resource.amount *= capacityModifier;
                 else
                     resource.amount = 0f;

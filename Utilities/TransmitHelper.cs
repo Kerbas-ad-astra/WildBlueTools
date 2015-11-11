@@ -40,6 +40,9 @@ namespace WildBlueIndustries
         public Part part = null;
 
         protected List<TransmitItem> transmitList = new List<TransmitItem>();
+        protected FixedUpdateHelper fixedUpdateHelper;
+        protected ModuleDataTransmitter transmitterToMonitor;
+        protected bool monitorTransmitterStatus;
 
         public bool TransmitToKSC(ScienceData data)
         {
@@ -70,7 +73,8 @@ namespace WildBlueIndustries
 
             if (bestTransmitter != null)
             {
-                bestTransmitter.TransmitData(dataQueue, OnTransmitComplete);
+                bestTransmitter.TransmitData(dataQueue);
+                monitor_for_completion(bestTransmitter);
                 return true;
             }
             else
@@ -129,7 +133,8 @@ namespace WildBlueIndustries
 
             if (bestTransmitter != null)
             {
-                bestTransmitter.TransmitData(dataQueue, OnTransmitComplete);
+                bestTransmitter.TransmitData(dataQueue);
+                monitor_for_completion(bestTransmitter);
                 return true;
             }
             else
@@ -137,6 +142,31 @@ namespace WildBlueIndustries
                 //Inform user that there is no available transmitter.
                 ScreenMessages.PostScreenMessage(kNoAvailableTransmitter, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return false;
+            }
+        }
+
+        private void monitor_for_completion(ModuleDataTransmitter transmitter)
+        {
+            transmitterToMonitor = transmitter;
+            monitorTransmitterStatus = true;
+
+            if (fixedUpdateHelper == null)
+            {
+                fixedUpdateHelper = this.part.gameObject.AddComponent<FixedUpdateHelper>();
+                fixedUpdateHelper.onFixedUpdateDelegate = OnUpdateFixed;
+            }
+            fixedUpdateHelper.enabled = true;
+        }
+
+        public void OnUpdateFixed()
+        {
+            if (!monitorTransmitterStatus)
+                return;
+
+            if (transmitterToMonitor.statusText.Contains("Done"))
+            {
+                OnTransmitComplete();
+                monitorTransmitterStatus = false;
             }
         }
 
