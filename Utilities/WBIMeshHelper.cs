@@ -220,7 +220,9 @@ namespace WildBlueIndustries
                         objectTransforms[i][j].gameObject.SetActive(false);
 
                         if (objectTransforms[i][j].gameObject.collider != null)
+                        {
                             objectTransforms[i][j].gameObject.collider.enabled = false;
+                        }
                     }
                 }
             }
@@ -232,10 +234,12 @@ namespace WildBlueIndustries
             // enable the selected one last because there might be several entries with the same object, and we don't want to disable it after it's been enabled.
             for (int i = 0; i < objectTransforms[objectNumber].Count; i++)
             {
+                Log("FRED Setting active for " + objectTransforms[objectNumber][i].name);
                 objectTransforms[objectNumber][i].gameObject.SetActive(true);
 
                 if (objectTransforms[objectNumber][i].gameObject.collider != null)
                 {
+                    Debug.Log("FRED object has collider");
                     objectTransforms[objectNumber][i].gameObject.collider.enabled = true;
                 }
             }

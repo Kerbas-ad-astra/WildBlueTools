@@ -400,7 +400,18 @@ namespace WildBlueIndustries
                     }
                 }
 
-                else //No longer deployed.
+                //No longer deployed, should we preserve the resource?
+                else if (string.IsNullOrEmpty(_resourcesToKeep) == false)
+                {
+                    if (_resourcesToKeep.Contains(resource.resourceName) == false)
+                    {
+                        resource.amount = 0;
+                        resource.maxAmount = 1;
+                    }
+                }
+
+                //No longer deployed
+                else
                 {
                     resource.amount = 0;
                     resource.maxAmount = 1;
