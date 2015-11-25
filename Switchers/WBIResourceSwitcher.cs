@@ -336,6 +336,23 @@ namespace WildBlueIndustries
                 OnEditorAttach();
                 if (loadTemplateResources)
                     loadResourcesFromTemplate(nodeTemplate);
+                else
+                    updateResourcesFromTemplate(nodeTemplate);
+
+                //Hide previous template type button?
+                if (templatesModel.templateNodes.Length >= 4)
+                {
+                    Events["PrevType"].guiActive = true;
+                    Events["PrevType"].guiActiveEditor = true;
+                    Events["PrevType"].guiActiveUnfocused = true;
+                }
+
+                else
+                {
+                    Events["PrevType"].guiActiveUnfocused = false;
+                    Events["PrevType"].guiActiveEditor = false;
+                    Events["PrevType"].guiActive = false;
+                }
 
                 //Call the OnRedecorateModule method to give others a chance to do stuff
                 OnRedecorateModule(nodeTemplate, payForRedecoration);
@@ -641,13 +658,75 @@ namespace WildBlueIndustries
 
             //Init the module GUI
             initModuleGUI();
-            
-            ShowDecals(decalsVisible);
+
+            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            {
+                Events["ToggleDecals"].guiActive = false;
+                Events["ToggleDecals"].guiActiveEditor = false;
+                Events["ToggleDecals"].guiActiveUnfocused = false;
+            }
+            else
+            {
+                ShowDecals(decalsVisible);
+            }
         }
 
         #endregion
 
         #region Helpers
+        protected virtual void updateResourcesFromTemplate(ConfigNode nodeTemplate)
+        {
+            string templateType = nodeTemplate.GetValue("templateType");
+            PartResource resource = null;
+            string value;
+            float capacityModifier = capacityFactor;
+            ConfigNode[] templateResourceNodes = nodeTemplate.GetNodes("RESOURCE");
+            if (templateResourceNodes == null)
+            {
+                Log(nodeTemplate.GetValue("shortName") + " has no resources.");
+                return;
+            }
+
+            Log("template resource count: " + templateResourceNodes.Length);
+            Log("capacityModifier: " + capacityModifier);
+            foreach (ConfigNode resourceNode in templateResourceNodes)
+            {
+                //If we kept the resource, then skip this template resource.
+                //We won't know what the original values were if we merged values.
+                value = resourceNode.GetValue("name");
+                if (this.part.Resources.Contains(value))
+                    continue;
+
+                resource = this.part.AddResource(resourceNode);
+                Log("Added resource: " + resource.resourceName);
+
+                //Apply the capacity factor
+                if (HighLogic.LoadedSceneIsEditor && fillToMaxInEditor == true)
+                    resource.amount *= capacityModifier;
+                else
+                    resource.amount = 0f;
+
+                //Some templates don't apply the capaictyFactor
+                //First, if we have no capacityFactorTypes entry, then apply the capacityFactor. This is for backwards compatibility.
+                if (string.IsNullOrEmpty(capacityFactorTypes))
+                    resource.maxAmount *= capacityModifier;
+
+                //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
+                else if (capacityFactorTypes.Contains(templateType))
+                    resource.maxAmount *= capacityModifier;
+
+                //If we aren't deployed then set the current and max amounts
+                if (isDeployed == false && isInflatable)
+                {
+                    resource.maxAmount = 1.0f;
+                    resource.amount = 0f;
+                }
+
+                _templateResources.Add(resource);
+                resource.isTweakable = true;
+            }
+        }
+
         public virtual void loadResourcesFromTemplate(ConfigNode nodeTemplate)
         {
             PartResource resource = null;
@@ -1045,7 +1124,7 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActiveEditor = false;
                 Events["PrevType"].guiActiveUnfocused = false;
             }
-            else if (templatesModel.templateNodes.Count<ConfigNode>() >= 2)
+            else if (templatesModel.templateNodes.Count<ConfigNode>() >= 4)
             {
                 Events["NextType"].guiActive = true;
                 Events["NextType"].guiActiveEditor = true;

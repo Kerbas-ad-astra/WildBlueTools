@@ -35,10 +35,12 @@ namespace WildBlueIndustries
         [KSPField]
         public bool overridePartAttachRestriction = false;
 
+        [KSPField()]
+        public bool isInflatable = false;
+
         //Helper objects
         public bool animationStarted = false;
         public bool isDeployed = false;
-        public bool isInflatable = false;
         public int inflatedCrewCapacity = 0;
 
         #region User Events & API
