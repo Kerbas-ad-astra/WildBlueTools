@@ -44,7 +44,6 @@ namespace WildBlueIndustries
 
         public override void OnStart(StartState state)
         {
-            Log("FRED OnStart called");
             showGui = false;
             base.OnStart(state);
 

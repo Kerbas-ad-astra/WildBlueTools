@@ -185,6 +185,31 @@ namespace WildBlueIndustries
             return null;
         }
 
+        public static double GetTotalResourceAmount(string resourceName, Vessel vessel)
+        {
+            PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;
+            List<Part> parts;
+            double totalResources = 0f;
+
+            //First, does the resource definition exist?
+            if (definitions.Contains(resourceName))
+            {
+                //The definition exists, now see if the vessel has the resource
+                parts = vessel.parts;
+                foreach (Part part in parts)
+                {
+                    if (part.Resources.Count > 0)
+                    {
+                        foreach (PartResource res in part.Resources)
+                            if (res.resourceName == resourceName)
+                                totalResources += res.amount;
+                    }
+                }
+            }
+
+            return totalResources;
+        }
+
         public static bool VesselHasResource(string resourceName, Vessel vessel)
         {
             PartResourceDefinitionList definitions = PartResourceLibrary.Instance.resourceDefinitions;

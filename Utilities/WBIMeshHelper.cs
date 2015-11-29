@@ -220,7 +220,9 @@ namespace WildBlueIndustries
                         objectTransforms[i][j].gameObject.SetActive(false);
 
                         if (objectTransforms[i][j].gameObject.collider != null)
+                        {
                             objectTransforms[i][j].gameObject.collider.enabled = false;
+                        }
                     }
                 }
             }

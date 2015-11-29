@@ -32,10 +32,15 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public string endEventGUIName;
 
+        [KSPField]
+        public bool overridePartAttachRestriction = false;
+
+        [KSPField()]
+        public bool isInflatable = false;
+
         //Helper objects
         public bool animationStarted = false;
         public bool isDeployed = false;
-        public bool isInflatable = false;
         public int inflatedCrewCapacity = 0;
 
         #region User Events & API
@@ -49,13 +54,17 @@ namespace WildBlueIndustries
                 return;
             }
 
-            //make sure we don't have parts attached
-            if (isInflatable && isDeployed)
+            //make sure we don't have parts radially attached
+            if (isInflatable && isDeployed && !overridePartAttachRestriction)
             {
                 if (this.part.children.Count > 0)
                 {
-                    ScreenMessages.PostScreenMessage(this.part.name + " has parts attached to it. Please remove them before deflating.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                    return;
+                    foreach (Part childPart in this.part.children)
+                        if (childPart.attachMode == AttachModes.SRF_ATTACH)
+                        {
+                            ScreenMessages.PostScreenMessage(this.part.name + " has parts attached to it. Please remove them before deflating.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                            return;
+                        }
                 }
             }
 

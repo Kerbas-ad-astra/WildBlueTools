@@ -109,8 +109,8 @@ namespace WildBlueIndustries
             if (switcher.templateNodes != templateType)
             {
                 switcher.templateNodes = templateType;
-                switcher.CurrentTemplateIndex = 0;
                 switcher.initTemplates();
+                switcher.CurrentTemplateIndex = 0;
                 switcher.ReloadTemplate();
             }
         }
@@ -141,22 +141,17 @@ namespace WildBlueIndustries
             bool canAffordCost = false;
             string notEnoughPartsMsg;
 
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceRequired);
-            Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
-
             calculateRemodelCostModifier();
             double amount = resourceCost * (1.0 - reconfigureCostModifier);
+            double totalResources = ResourceHelper.GetTotalResourceAmount(resourceRequired, this.part.vessel);
 
             //An inflatable part that hasn't been inflated yet is an automatic pass.
             if (switcher.isInflatable && !switcher.isDeployed)
                 return true;
 
             //now check to make sure the vessel has enough parts.
-            if (resource == null)
-                canAffordCost = false;
-
-            else if (resource.amount < amount)
-                canAffordCost = false;
+            if (totalResources >= amount)
+                canAffordCost = true;
 
             if (!canAffordCost)
             {

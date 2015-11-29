@@ -40,6 +40,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public bool guiIsVisible = true;
 
+        [KSPField(isPersistant = true)]
+        public string actionGroup = "None";
+
         //Helper objects
         public bool isDeployed = false;
         protected AnimationState animationState;
@@ -173,6 +176,10 @@ namespace WildBlueIndustries
             Events["ToggleAnimation"].guiActive = guiIsVisible;
             Events["ToggleAnimation"].guiActiveEditor = guiIsVisible;
             Actions["ToggleAnimationAction"].guiName = actionGUIName;
+
+            //Set action
+//            if (string.IsNullOrEmpty(actionGroup) == false)
+//                Actions["ToggleAnimationAction"].actionGroup = (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), actionGroup);
 
             if (isDeployed)
             {

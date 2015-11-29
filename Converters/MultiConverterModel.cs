@@ -324,9 +324,6 @@ namespace WildBlueIndustries
 
             if (converter.IsActivated)
                 node.AddValue("lastUpdateTime", Planetarium.GetUniversalTime());
-            node.AddValue("HeatThrottle", converter.HeatThrottle);
-            node.AddValue("HeatThrottleSpeed", converter.HeatThrottleSpeed);
-            node.AddValue("avgHeatThrottle", converter.avgHeatThrottle);
             node.AddValue("DirtyFlag", converter.DirtyFlag);
         }
 

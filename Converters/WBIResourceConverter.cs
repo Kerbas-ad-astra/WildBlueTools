@@ -30,6 +30,7 @@ namespace WildBlueIndustries
         protected string attemptCriticalSuccess = "Critical Success";
         protected string attemptFail = "Fail";
         protected string attemptSuccess = "Success";
+        protected string requiredResource = "Requires ";
 
         public static bool showResults = true;
 
@@ -61,9 +62,50 @@ namespace WildBlueIndustries
         protected float totalCrewSkill = -1.0f;
         protected double secondsPerCycle = 0f;
 
+        public string GetMissingResource()
+        {
+            PartResourceDefinition definition;
+            Dictionary<string, PartResource> resourceMap = new Dictionary<string, PartResource>();
+
+            foreach (PartResource res in this.part.Resources)
+                resourceMap.Add(res.resourceName, res);
+
+            //If we have required resources, make sure we have them.
+            if (reqList.Count > 0)
+            {
+                foreach (ResourceRatio resRatio in reqList)
+                {
+                    //Do we have a definition?
+                    definition = ResourceHelper.DefinitionForResource(resRatio.ResourceName);
+                    if (definition == null)
+                        return resRatio.ResourceName;
+
+                    //Do we have the resource aboard?
+                    if (resourceMap.ContainsKey(resRatio.ResourceName) == false)
+                        return resRatio.ResourceName;
+
+                    //Do we have enough?
+                    if (resourceMap[resRatio.ResourceName].amount < resRatio.Ratio)
+                        return resRatio.ResourceName;
+                }
+            }
+
+            return null;
+        }
+
         [KSPEvent(guiName = "Start Converter", guiActive = true)]
         public virtual void StartConverter()
         {
+            string absentResource = GetMissingResource();
+
+            //If we have required resources, make sure we have them.
+            if (!string.IsNullOrEmpty(absentResource))
+            {
+                status = requiredResource + absentResource;
+                StopResourceConverter();
+                return;
+            }
+
             StartResourceConverter();
             cycleStartTime = Planetarium.GetUniversalTime();
             lastUpdateTime = cycleStartTime;
