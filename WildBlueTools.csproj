@@ -51,6 +51,7 @@
     <Compile Include="GUI\WBIResultsDialogSwizzler.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="InternalScreenSwitcher.cs" />
     <Compile Include="Utilities\ExtendedPartModule.cs" />
     <Compile Include="GUI\FakeExperimentResults.cs" />
     <Compile Include="Utilities\FixedUpdateHelper.cs" />
@@ -79,6 +80,8 @@
     <Compile Include="Converters\WBIResourceConverter.cs" />
     <Compile Include="Parts\WBIModuleRCS.cs" />
     <Compile Include="Parts\WBIActiveRadiatorToggle.cs" />
+    <Compile Include="Converters\WBIBasicScienceLab.cs" />
+    <Compile Include="WBIScreenPropHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

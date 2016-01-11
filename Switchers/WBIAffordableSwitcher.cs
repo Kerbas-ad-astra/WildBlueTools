@@ -24,6 +24,9 @@ namespace WildBlueIndustries
         private const string kInsufficientSkill = "Insufficient skill to reconfigure the module.";
         private const string kInsufficientCrew = "Cannot reconfigure. Either crew the module or perform an EVA.";
 
+        [KSPField]
+        public float materialCostModifier = 1.0f;
+
         //Should the player pay to reconfigure the module?
         public static bool payForReconfigure = true;
 
@@ -80,7 +83,7 @@ namespace WildBlueIndustries
                 value = CurrentTemplate.GetValue("rocketParts");
                 if (string.IsNullOrEmpty(value) == false)
                 {
-                    float recycleAmount = float.Parse(value);
+                    float recycleAmount = float.Parse(value) * materialCostModifier;
 
                     //calculate the amount of parts that we can recycle.
                     recycleAmount *= calculateRecycleAmount();

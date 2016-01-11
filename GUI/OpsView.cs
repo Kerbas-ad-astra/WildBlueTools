@@ -35,6 +35,7 @@ namespace WildBlueIndustries
         public Part part;
         public PartResourceList resources;
         public bool techResearched;
+        public bool fieldReconfigurable;
         public string nextName;
         public string prevName;
         public string previewName;
@@ -258,12 +259,24 @@ namespace WildBlueIndustries
             if (GUILayout.Button("Prev: " + prevName))
                 if (prevModuleDelegate != null)
                     prevModuleDelegate();
+
+            if (!fieldReconfigurable)
+                GUILayout.Label("<color=yellow>NOTE: Cannot be reconfigured after launch.</color>");
         }
 
         protected void drawPreviewGUI()
         {
             //Only allow reconfiguring of the module if it allows field reconfiguration.
-            if (techResearched == false)
+            if (fieldReconfigurable == false)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("<color=yellow>This module cannot be reconfigured in the field.</color>");
+                GUILayout.FlexibleSpace();
+                return;
+            }
+
+            //Only allow reconfiguring of the module if enough tech has been researched.
+            else if (techResearched == false)
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("<color=yellow>This module cannot be reconfigured. Research more technology.</color>");

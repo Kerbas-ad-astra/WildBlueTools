@@ -23,6 +23,11 @@ namespace WildBlueIndustries
         void DrawOpsWindow();
     }
 
+    public interface ITemplateOps2 : ITemplateOps
+    {
+        void SetOpsView(OpsView view);
+    }
+
     public class WBIMultiConverter : WBIAffordableSwitcher
     {
         //Helper objects
@@ -112,7 +117,7 @@ namespace WildBlueIndustries
 
             //Set preview name to the new template's name
             moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
-            moduleOpsView.cost = templatesModel[templateIndex].GetValue("rocketParts");
+            moduleOpsView.cost = getTemplateCost(templateIndex);
 
             //Get next template name
             templateIndex = templatesModel.GetNextUsableIndex(templateIndex);
@@ -133,7 +138,7 @@ namespace WildBlueIndustries
 
             //Set preview name to the new template's name
             moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
-            moduleOpsView.cost = templatesModel[templateIndex].GetValue("rocketParts");
+            moduleOpsView.cost = getTemplateCost(templateIndex);
 
             //Get next template name (which will be the current template)
             moduleOpsView.nextName = templateName;
@@ -206,12 +211,13 @@ namespace WildBlueIndustries
             if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && string.IsNullOrEmpty(techRequiredToReconfigure) == false)
                 hasRequiredTechToReconfigure = ResearchAndDevelopment.GetTechnologyState(techRequiredToReconfigure) == RDTech.State.Available ? true : false;
             moduleOpsView.techResearched = fieldReconfigurable & hasRequiredTechToReconfigure;
+            moduleOpsView.fieldReconfigurable = fieldReconfigurable;
 
             //Set preview, next, and previous
             if (HighLogic.LoadedSceneIsEditor == false)
             {
                 moduleOpsView.previewName = shortName;
-                moduleOpsView.cost = templatesModel[templateIndex].GetValue("rocketParts");
+                moduleOpsView.cost = getTemplateCost(templateIndex);
 
                 templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
                 if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
@@ -233,16 +239,19 @@ namespace WildBlueIndustries
             base.OnUpdate();
 
             //Show/hide the inflate/deflate button depending upon whether or not crew is aboard
-            if (this.part.protoModuleCrew.Count() > 0)
+            if (isInflatable)
             {
-                Events["ToggleInflation"].guiActive = false;
-                Events["ToggleInflation"].guiActiveUnfocused = false;
-            }
+                if (this.part.protoModuleCrew.Count() > 0)
+                {
+                    Events["ToggleInflation"].guiActive = false;
+                    Events["ToggleInflation"].guiActiveUnfocused = false;
+                }
 
-            else
-            {
-                Events["ToggleInflation"].guiActive = true;
-                Events["ToggleInflation"].guiActiveUnfocused = true;
+                else
+                {
+                    Events["ToggleInflation"].guiActive = true;
+                    Events["ToggleInflation"].guiActiveUnfocused = true;
+                }
             }
         }
 
@@ -391,6 +400,18 @@ namespace WildBlueIndustries
         #endregion
 
         #region Helpers
+        protected string getTemplateCost(int templateIndex)
+        {
+            if (templatesModel[templateIndex].HasValue("rocketParts"))
+            {
+                float cost = float.Parse(templatesModel[templateIndex].GetValue("rocketParts"));
+                cost *= materialCostModifier;
+                return string.Format("{0:f2}", cost);
+            }
+            else
+                return "0";
+        }
+
         protected virtual void drawTemplateOps()
         {
             if (templateOps != null)
@@ -399,6 +420,10 @@ namespace WildBlueIndustries
 
         protected virtual bool templateHasOpsWindow()
         {
+            ITemplateOps2 templateOps2 = this.part.FindModuleImplementing<ITemplateOps2>();
+            if (templateOps2 != null)
+                templateOps2.SetOpsView(moduleOpsView);
+
             templateOps = this.part.FindModuleImplementing<ITemplateOps>();
 
             if (templateOps != null)

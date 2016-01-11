@@ -31,8 +31,12 @@ namespace WildBlueIndustries
         protected string attemptFail = "Fail";
         protected string attemptSuccess = "Success";
         protected string requiredResource = "Requires ";
+        protected string needCrew = "Missing {0} Crew";
 
         public static bool showResults = true;
+
+        [KSPField]
+        public int crewsRequired = 0;
 
         [KSPField]
         public float minimumSuccess;
@@ -98,6 +102,10 @@ namespace WildBlueIndustries
         {
             string absentResource = GetMissingResource();
 
+            //Do we have enough crew?
+            if (hasMinimumCrew() == false)
+                return;
+
             //If we have required resources, make sure we have them.
             if (!string.IsNullOrEmpty(absentResource))
             {
@@ -156,6 +164,9 @@ namespace WildBlueIndustries
                 criticalSuccess = kCriticalSuccess;
             if (criticalFail == 0)
                 criticalFail = kCriticalFailure;
+
+            //Check minimum crew
+            hasMinimumCrew();
         }
 
         protected override void PostProcess(ConverterResults result, double deltaTime)
@@ -177,6 +188,13 @@ namespace WildBlueIndustries
             }
             if (hoursPerCycle == 0f)
                 return;
+
+            //Make sure we have the minimum crew
+            if (hasMinimumCrew() == false)
+            {
+                StopConverter();
+                return;
+            }
 
             //Calculate the crew skill and seconds of research per cycle.
             //Thes values can change if the player swaps out crew.
@@ -207,6 +225,7 @@ namespace WildBlueIndustries
                 status = result.Status;
             }
         }
+
         public virtual void SetGuiVisible(bool isVisible)
         {
             Fields["lastAttempt"].guiActive = isVisible;
@@ -309,6 +328,23 @@ namespace WildBlueIndustries
 
             //Done
             return roll;
+        }
+
+        protected virtual bool hasMinimumCrew()
+        {
+            //Do we have enough crew?
+            if (crewsRequired > 0)
+            {
+                int crewCount = this.part.protoModuleCrew.Count;
+
+                if (crewsRequired > crewCount)
+                {
+                    status = string.Format(needCrew, crewsRequired - crewCount);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         protected virtual void onCriticalFailure()

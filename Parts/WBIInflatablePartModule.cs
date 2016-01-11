@@ -44,7 +44,7 @@ namespace WildBlueIndustries
         public int inflatedCrewCapacity = 0;
 
         #region User Events & API
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleInflation", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleInflation", externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
         public virtual void ToggleInflation()
         {
             //If the module is inflatable, deployed, and has kerbals inside, then don't allow the module to be deflated.
@@ -160,6 +160,15 @@ namespace WildBlueIndustries
             }
         }
 
+/*
+        public override void OnFixedUpdate()
+        {
+            base.OnFixedUpdate();
+            this.Events["ToggleInflation"].guiActive = false;
+            this.Events["ToggleInflation"].guiActiveEditor = false;
+            this.Events["ToggleInflation"].guiActiveUnfocused = false;
+        }
+*/
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -168,9 +177,9 @@ namespace WildBlueIndustries
 
             if (string.IsNullOrEmpty(animationName))
             {
-                Events["ToggleInflation"].guiActive = false;
-                Events["ToggleInflation"].guiActiveEditor = false;
-                Events["ToggleInflation"].guiActiveUnfocused = false;
+                this.Events["ToggleInflation"].guiActive = false;
+                this.Events["ToggleInflation"].guiActiveEditor = false;
+                this.Events["ToggleInflation"].guiActiveUnfocused = false;
             }
 
             else if (flightAnimationOnly)
@@ -230,6 +239,7 @@ namespace WildBlueIndustries
             //Hide toggle button
             else
             {
+                Log("Part is not inflatable.");
                 Events["ToggleInflation"].guiActive = false;
                 Events["ToggleInflation"].guiActiveEditor = false;
                 Events["ToggleInflation"].guiActiveUnfocused = false;
