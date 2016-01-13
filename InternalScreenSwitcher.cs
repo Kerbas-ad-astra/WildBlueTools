@@ -18,20 +18,26 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public delegate void ScreenClickDelegate();
+
     public class ButtonClickWatcher : MonoBehaviour
     {
+        public ScreenClickDelegate screenClickDelegate;
         protected bool mouseDown;
 
         public void OnMouseDown()
         {
             mouseDown = true;
-            Debug.Log("FRED OnMouseDown");
         }
 
         public void OnMouseUp()
         {
-            mouseDown = false;
-            Debug.Log("FRED OnMouseUp");
+            if (mouseDown)
+            {
+                mouseDown = false;
+                if (screenClickDelegate != null)
+                    screenClickDelegate();
+            }
         }
     }
 
@@ -59,8 +65,16 @@ namespace WildBlueIndustries
                     {
                         clickWatcher = goButton.AddComponent<ButtonClickWatcher>();
                     }
+                    clickWatcher.screenClickDelegate = OnScreenClick;
                 }
             }
+        }
+
+        public void OnScreenClick()
+        {
+            WBIScreenPropHelper screenPropHelper = this.part.FindModuleImplementing<WBIScreenPropHelper>();
+            if (screenPropHelper != null)
+                screenPropHelper.RandomizeScreenImage(this);
         }
 
         public void ChangeTexture(Texture2D newTexture)
@@ -68,20 +82,28 @@ namespace WildBlueIndustries
             Transform[] targets;
             Renderer rendererMaterial;
 
-            //Get the targets
-            targets = internalProp.FindModelTransforms(screenTransform);
-            if (targets == null)
+            try
             {
-                Debug.Log("No targets found for " + screenTransform);
-                return;
+                //Get the targets
+                targets = internalProp.FindModelTransforms(screenTransform);
+                if (targets == null)
+                {
+                    Debug.Log("No targets found for " + screenTransform);
+                    return;
+                }
+
+                //Now, replace the textures in each target
+                foreach (Transform target in targets)
+                {
+                    rendererMaterial = target.GetComponent<Renderer>();
+                    rendererMaterial.material.SetTexture(MAIN_TEXTURE, newTexture);
+                    rendererMaterial.material.SetTexture(EMISSIVE_TEXTURE, newTexture);
+                }
             }
 
-            //Now, replace the textures in each target
-            foreach (Transform target in targets)
+            catch (Exception ex)
             {
-                rendererMaterial = target.GetComponent<Renderer>();
-                rendererMaterial.material.SetTexture(MAIN_TEXTURE, newTexture);
-                rendererMaterial.material.SetTexture(EMISSIVE_TEXTURE, newTexture);
+                Debug.Log("[InternalScreenSwitcher] Exception while changing texture: " + ex.ToString());
             }
         }
     }

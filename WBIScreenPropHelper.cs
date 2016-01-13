@@ -40,6 +40,8 @@ namespace WildBlueIndustries
         protected List<InternalScreenSwitcher> screenSwitchers = new List<InternalScreenSwitcher>();
         protected List<ScreenInfo> screenImages = new List<ScreenInfo>();
         protected Dictionary<int, ScreenInfo> startingScreenImages = new Dictionary<int, ScreenInfo>();
+        protected bool rerunSetup;
+        protected WBIInflatablePartModule inflatableModule;
 
         double cycleStartTime;
 
@@ -49,40 +51,15 @@ namespace WildBlueIndustries
             if (HighLogic.LoadedSceneIsFlight == false)
                 return;
 
-            //Look for internal screens
-            foreach (InternalProp prop in this.part.internalModel.props)
-            {
-                foreach (InternalModule intModule in prop.internalModules)
-                {
-                    if (intModule.ClassName == "InternalScreenSwitcher")
-                        screenSwitchers.Add((InternalScreenSwitcher)intModule);
-                }
-            }
-
-            //Get the screens that we'll use
-            loadScreenImages();
-
-            //Setup the initial screen images
-            setupInitialImages();
-
-            //Create first set of random images
-            randomizeScreenImages();
-
-            //If we have no screens then we're done, don't accept update calls
-            if (screenSwitchers.Count == 0 || moduleEnabled == false)
-            {
-                this.enabled = false;
-                this.isEnabled = false;
-                return;
-            }
-
-            //Get the current time
-            cycleStartTime = Planetarium.GetUniversalTime();
+            runSetup();
         }
 
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();
+
+            if (HighLogic.LoadedSceneIsFlight == false)
+                return;
 
             double elapsedTime = Planetarium.GetUniversalTime() - cycleStartTime;
 
@@ -94,6 +71,60 @@ namespace WildBlueIndustries
 
                 //Change screen images
                 randomizeScreenImages();
+            }
+        }
+
+        protected void runSetup()
+        {
+            try
+            {
+                //Clear our database
+                startingScreenImages.Clear();
+                screenSwitchers.Clear();
+                screenImages.Clear();
+
+                //Look for internal screens
+                findInternalScreens();
+
+                //Get the screens that we'll use
+                loadScreenImages();
+
+                //Setup the initial screen images
+                setupInitialImages();
+
+                //Create first set of random images
+                randomizeScreenImages();
+
+                //Get the current time
+                cycleStartTime = Planetarium.GetUniversalTime();
+
+                //Setup complete
+                rerunSetup = false;
+            }
+            catch (Exception ex)
+            {
+                Log("Exception while trying to run setup: " + ex.ToString());
+            }
+        }
+
+        protected void findInternalScreens()
+        {
+            if (screenSwitchers.Count > 0)
+                return;
+
+            foreach (InternalProp prop in this.part.internalModel.props)
+            {
+                foreach (InternalModule intModule in prop.internalModules)
+                {
+                    if (intModule.ClassName == "InternalScreenSwitcher")
+                        screenSwitchers.Add((InternalScreenSwitcher)intModule);
+                }
+            }
+
+            if (screenSwitchers.Count == 0 || moduleEnabled == false)
+            {
+                this.enabled = false;
+                this.isEnabled = false;
             }
         }
 
@@ -161,31 +192,53 @@ namespace WildBlueIndustries
             }
         }
 
-        protected void randomizeScreenImages()
+        public void RandomizeScreenImage(InternalScreenSwitcher screenSwitcher)
         {
-            InternalScreenSwitcher screenSwitcher;
             int screenIndex;
 
             //Seed the random number generator
             UnityEngine.Random.seed = System.Environment.TickCount;
 
-            for (int index = 0; index < screenSwitchers.Count; index++)
+            //Generate a random screen image number
+            screenIndex = UnityEngine.Random.Range(0, screenImages.Count);
+
+            //Switch the texture
+            screenSwitcher.ChangeTexture(screenImages[screenIndex].texture);
+        }
+
+        protected void randomizeScreenImages()
+        {
+            InternalScreenSwitcher screenSwitcher;
+            int screenIndex;
+
+            try
             {
-                //Get the screen switcher
-                screenSwitcher = screenSwitchers[index];
+                //Seed the random number generator
+                UnityEngine.Random.seed = System.Environment.TickCount;
 
-                //If the screen is locked, then skip it.
-                if (startingScreenImages.ContainsKey(index))
+                for (int index = 0; index < screenSwitchers.Count; index++)
                 {
-                    if (startingScreenImages[index].locked)
-                        continue;
+                    //Get the screen switcher
+                    screenSwitcher = screenSwitchers[index];
+
+                    //If the screen is locked, then skip it.
+                    if (startingScreenImages.ContainsKey(index))
+                    {
+                        if (startingScreenImages[index].locked)
+                            continue;
+                    }
+
+                    //Generate a random screen image number
+                    screenIndex = UnityEngine.Random.Range(0, screenImages.Count);
+
+                    //Switch the texture
+                    screenSwitcher.ChangeTexture(screenImages[screenIndex].texture);
                 }
+            }
 
-                //Generate a random screen image number
-                screenIndex = UnityEngine.Random.Range(0, screenImages.Count);
-
-                //Switch the texture
-                screenSwitcher.ChangeTexture(screenImages[screenIndex].texture);
+            catch (Exception ex)
+            {
+                Log("Encountered an error while trying to randomize the screen images: " + ex.ToString());
             }
         }
 
@@ -201,6 +254,5 @@ namespace WildBlueIndustries
             }
 
         }
-
     }
 }

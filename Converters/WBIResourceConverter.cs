@@ -72,7 +72,9 @@ namespace WildBlueIndustries
             Dictionary<string, PartResource> resourceMap = new Dictionary<string, PartResource>();
 
             foreach (PartResource res in this.part.Resources)
+            {
                 resourceMap.Add(res.resourceName, res);
+            }
 
             //If we have required resources, make sure we have them.
             if (reqList.Count > 0)
@@ -82,15 +84,21 @@ namespace WildBlueIndustries
                     //Do we have a definition?
                     definition = ResourceHelper.DefinitionForResource(resRatio.ResourceName);
                     if (definition == null)
+                    {
                         return resRatio.ResourceName;
+                    }
 
                     //Do we have the resource aboard?
                     if (resourceMap.ContainsKey(resRatio.ResourceName) == false)
+                    {
                         return resRatio.ResourceName;
+                    }
 
                     //Do we have enough?
                     if (resourceMap[resRatio.ResourceName].amount < resRatio.Ratio)
+                    {
                         return resRatio.ResourceName;
+                    }
                 }
             }
 
@@ -104,7 +112,9 @@ namespace WildBlueIndustries
 
             //Do we have enough crew?
             if (hasMinimumCrew() == false)
+            {
                 return;
+            }
 
             //If we have required resources, make sure we have them.
             if (!string.IsNullOrEmpty(absentResource))
