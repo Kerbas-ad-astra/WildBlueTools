@@ -60,6 +60,8 @@ namespace WildBlueIndustries
 
             if (HighLogic.LoadedSceneIsFlight == false)
                 return;
+            if (screenChangeSeconds < 0.001f)
+                return;
 
             double elapsedTime = Planetarium.GetUniversalTime() - cycleStartTime;
 

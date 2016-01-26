@@ -39,6 +39,7 @@ namespace WildBlueIndustries
                     screenClickDelegate();
             }
         }
+
     }
 
     public class InternalScreenSwitcher : InternalModule

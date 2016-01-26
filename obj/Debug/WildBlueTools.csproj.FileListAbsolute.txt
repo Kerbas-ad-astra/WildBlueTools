@@ -7,6 +7,5 @@ C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\TDx.TDxInput.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\TrackIRUnity.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\Mono.Cecil.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\Mono.Security.dll
-C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.csprojResolveAssemblyReference.cache
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.pdb
