@@ -218,14 +218,18 @@ namespace WildBlueIndustries
             CalculateProgress();
 
             //If we've completed our research cycle then perform the analyis.
-            int cyclesSinceLastUpdate = Mathf.RoundToInt((float)(elapsedTime / secondsPerCycle));
-            int currentCycle;
-            for (currentCycle = 0; currentCycle < cyclesSinceLastUpdate; currentCycle++)
+            float completionRatio = (float)(elapsedTime / secondsPerCycle);
+            if (completionRatio > 1.0f)
             {
-                PerformAnalysis();
+                int cyclesSinceLastUpdate = Mathf.RoundToInt(completionRatio);
+                int currentCycle;
+                for (currentCycle = 0; currentCycle < cyclesSinceLastUpdate; currentCycle++)
+                {
+                    PerformAnalysis();
 
-                //Reset start time
-                cycleStartTime = Planetarium.GetUniversalTime();
+                    //Reset start time
+                    cycleStartTime = Planetarium.GetUniversalTime();
+                }
             }
 
             //If we're missing resources then stop the converter
