@@ -48,10 +48,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Utilities\ExternalCamera.cs" />
+    <Compile Include="GUI\ExternalCameraView.cs" />
     <Compile Include="GUI\WBIResultsDialogSwizzler.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="InternalScreenSwitcher.cs" />
+    <Compile Include="GUI\PlasmaScreenView.cs" />
+    <Compile Include="Parts\WBICamera.cs" />
+    <Compile Include="PropModules\InternalScreenSwitcher.cs" />
     <Compile Include="Utilities\ExtendedPartModule.cs" />
     <Compile Include="GUI\FakeExperimentResults.cs" />
     <Compile Include="Utilities\FixedUpdateHelper.cs" />
@@ -81,7 +85,9 @@
     <Compile Include="Parts\WBIModuleRCS.cs" />
     <Compile Include="Parts\WBIActiveRadiatorToggle.cs" />
     <Compile Include="Converters\WBIBasicScienceLab.cs" />
-    <Compile Include="WBIScreenPropHelper.cs" />
+    <Compile Include="PropModules\WBIScreenPropHelper.cs" />
+    <Compile Include="Utilities\WBIModuleAnimateGeneric.cs" />
+    <Compile Include="Parts\WBIPlasmaTV.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

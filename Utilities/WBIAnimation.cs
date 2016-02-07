@@ -41,7 +41,7 @@ namespace WildBlueIndustries
         public bool guiIsVisible = true;
 
         [KSPField(isPersistant = true)]
-        public string actionGroup = "None";
+        public string actionGroup = "";
 
         //Helper objects
         public bool isDeployed = false;
