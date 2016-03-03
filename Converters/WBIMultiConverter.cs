@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -49,7 +49,7 @@ namespace WildBlueIndustries
             return moduleLogo;
         }
 
-        public string GetModuleInfo(string templateName)
+        public virtual string GetModuleInfo(string templateName)
         {
             StringBuilder moduleInfo = new StringBuilder();
             StringBuilder converterInfo = new StringBuilder();
@@ -75,7 +75,8 @@ namespace WildBlueIndustries
                 moduleInfo.Append("Crew Capacity: " + nodeTemplate.GetValue("CrewCapacity") + "\r\n");
 
             //Add just the converters
-            foreach (ConfigNode moduleNode in nodeTemplate.nodes)
+            ConfigNode[] moduleNodes = nodeTemplate.nodes.GetNodes("MODULE");
+            foreach (ConfigNode moduleNode in moduleNodes)
             {
                 if (moduleNode.GetValue("name") == "ModuleResourceConverter")
                 {
@@ -517,6 +518,8 @@ namespace WildBlueIndustries
             base.initModuleGUI();
             int index;
             string value;
+
+            Events["ManageOperations"].active = ShowGUI;
 
             //Change the toggle button's name
             index = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);

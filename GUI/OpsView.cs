@@ -207,6 +207,7 @@ namespace WildBlueIndustries
         {
             GUILayout.BeginVertical(GUILayout.MaxWidth(350f));
             GUILayout.Space(4);
+            bool cncControlsRendered = false;
 
             managementTab = GUILayout.SelectionGrid(managementTab, managementTabs, tabs.Length);
             if (managementTab == 0)
@@ -227,6 +228,8 @@ namespace WildBlueIndustries
                 //Control From Here
                 if (commandModule != null)
                 {
+                    cncControlsRendered = true;
+
                     if (GUILayout.Button("Control From Here"))
                         commandModule.MakeReference();
 
@@ -236,14 +239,26 @@ namespace WildBlueIndustries
                 }
 
                 //Toggle Decals
-                if (switcher != null)
+                if (switcher != null && switcher.decalsVisible)
+                {
+                    cncControlsRendered = true;
+
                     if (GUILayout.Button("Toggle Decals"))
                         switcher.ToggleDecals();
+                }
 
                 //Toggle Lights
                 if (lightModule != null)
+                {
+                    cncControlsRendered = true;
+
                     if (GUILayout.Button("Toggle Lights"))
                         lightModule.ToggleAnimation();
+                }
+
+                //No controls?
+                if (!cncControlsRendered)
+                    GUILayout.Label("No C&C controls available");
             }
 
             GUILayout.EndVertical();

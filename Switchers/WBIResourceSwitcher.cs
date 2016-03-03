@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -78,6 +78,7 @@ namespace WildBlueIndustries
         protected string capacityFactorTypes;
         protected bool confirmResourceSwitch = false;
         protected bool deflateConfirmed = false;
+        protected bool dumpConfirmed = false;
         protected TemplatesModel templatesModel;
         protected Dictionary<string, ConfigNode> parameterOverrides = new Dictionary<string, ConfigNode>();
         protected Dictionary<string, double> resourceMaxAmounts = new Dictionary<string, double>();
@@ -87,11 +88,30 @@ namespace WildBlueIndustries
         #region Display Fields
         //We use this field to identify the template config node as well as have a GUI friendly name for the user.
         //When the module starts, we'll use the shortName to find the template and get the info we need.
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Module Type")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Configuration")]
         public string shortName;
         #endregion
 
         #region User Events & API
+        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "Dump Resources", guiActiveUnfocused = true, unfocusedRange = 3.0f)]
+        public void DumpResources()
+        {
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                if (dumpConfirmed == false)
+                {
+                    ScreenMessages.PostScreenMessage("Existing resources will be removed. Click a second time to confirm resource dump.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    dumpConfirmed = true;
+                    return;
+                }
+
+                dumpConfirmed = false;
+            }
+
+            foreach (PartResource resource in this.part.Resources)
+                resource.amount = 0;
+        }
+
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Decals")]
         public void ToggleDecals()
         {

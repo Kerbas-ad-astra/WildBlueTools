@@ -18,6 +18,8 @@ namespace WildBlueIndustries
         public Transform cameraTransform;
         public Part part;
         public int cameraIndex;
+        public bool enableRandomImages;
+        public float screenSwitchTime;
 
         protected ExternalCamera externalCamera;
         protected string[] imagePaths;
@@ -57,6 +59,18 @@ namespace WildBlueIndustries
             }
         }
 
+        public void GetRandomImage()
+        {
+            int imageIndex = UnityEngine.Random.Range(0, imagePaths.Length);
+            Texture2D randomImage = new Texture2D(1, 1);
+            WWW www = new WWW("file://" + imagePaths[imageIndex]);
+
+            www.LoadImageIntoTexture(randomImage);
+
+            if (showImageDelegate != null)
+                showImageDelegate(randomImage, imagePaths[imageIndex]);
+        }
+
         protected override void DrawWindowContents(int windowId)
         {
             GUILayout.BeginHorizontal();
@@ -65,6 +79,7 @@ namespace WildBlueIndustries
 
 //            drawCameraSelectors();
 
+            enableRandomImages = GUILayout.Toggle(enableRandomImages, "Enable Random Images");
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, new GUILayoutOption[] { GUILayout.Width(375) });
             if (viewOptionIndex == 0)
                 selectedIndex = GUILayout.SelectionGrid(selectedIndex, imagePaths, 1);

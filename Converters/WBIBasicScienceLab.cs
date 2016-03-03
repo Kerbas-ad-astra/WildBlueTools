@@ -25,6 +25,7 @@ namespace WildBlueIndustries
         private const float kDefaultResearchTime = 7f;
         private const float kCriticalSuccessBonus = 1.5f;
         private const string kResearchCriticalFail = "Botched Results";
+        private const string kNeedsRepairs = "Needs repairs";
         private const string kResearchFail = "Inconclusive";
         private const string kResearchCriticalSuccess = "Great Results";
         private const string kResearchSuccess = "Good Results";
@@ -40,6 +41,9 @@ namespace WildBlueIndustries
         protected string noResearchDataMsg = "No data to transmit yet, check back later.";
         protected string researchingMsg = "Researching";
         protected string readyMsg = "Ready";
+        protected string notEnoughResourcesToRepair = "Unable to repair the {0} due to insufficient resources. You need {1:f1} {2}";
+        protected string infoRepairSkill = "Repair Skill:";
+        protected string infoRepairResource = "Repair Resource:";
 
         [KSPField]
         public float sciencePerCycle;
@@ -59,12 +63,26 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public float fundsAdded;
 
+        [KSPField]
+        public string experimentID;
+
+        [KSPField(isPersistant = true)]
+        public bool isBroken;
+
+        [KSPField]
+        public string repairResource;
+
+        [KSPField]
+        public float repairAmount;
+
+        [KSPField]
+        public string repairSkill;
+
         protected bool failedLastAttempt;
         protected float successBonus;
-        protected string experimentID;
         protected float dataAmount;
-        protected FakeExperimentResults fakeExperiment;
         protected TransmitHelper transmitHelper = new TransmitHelper();
+        ScienceLabResultsView scienceLabView = new ScienceLabResultsView("Science Lab");
 
         #region Actions And Events
         [KSPEvent(guiActive = true, guiActiveUnfocused = true, unfocusedRange = 3.0f, guiName = "Review Data")]
@@ -76,13 +94,8 @@ namespace WildBlueIndustries
                 return;
             }
 
-            ModuleScienceLab lab = null;
-            List<ModuleScienceLab> labs = this.part.vessel.FindPartModulesImplementing<ModuleScienceLab>();
-            if (labs != null)
-                if (labs.Count > 0)
-                    lab = labs.First<ModuleScienceLab>();
-
-            fakeExperiment.ShowResults(experimentID, dataAmount, lab);
+            scienceLabView.scienceLab = this;
+            scienceLabView.SetVisible(true);
         }
 
         #endregion
@@ -92,18 +105,33 @@ namespace WildBlueIndustries
         public override string GetInfo()
         {
             StringBuilder moduleInfo = new StringBuilder();
-            moduleInfo.Append(base.GetInfo() + "\r\n\r\n");
 
-            moduleInfo.Append(string.Format("Research Time: {0:f2}hrs\r\n", GetSecondsPerCycle() / 3600f));
+            moduleInfo.Append("Minimum Crew: " + crewsRequired.ToString() + "\r\n\r\n");
+
+            moduleInfo.Append(base.GetInfo());
 
             if (sciencePerCycle > 0f)
-                moduleInfo.Append(string.Format("Science Per Cycle: {0:f2}\r\n", sciencePerCycle));
+                moduleInfo.Append(string.Format(" - Science: {0:f2}\r\n", sciencePerCycle));
 
             if (reputationPerCycle > 0f)
-                moduleInfo.Append(string.Format("Reputation Per Cycle: {0:f2}\r\n", reputationPerCycle));
+                moduleInfo.Append(string.Format(" - Reputation: {0:f2}\r\n", reputationPerCycle));
 
             if (fundsPerCycle > 0f)
-                moduleInfo.Append(string.Format("Funds Per Cycle: {0:f2}\r\n", fundsPerCycle));
+                moduleInfo.Append(string.Format(" - Funds: {0:f2}\r\n", fundsPerCycle));
+
+            moduleInfo.Append(string.Format("<color=#7FFF00><b>Research Cycle:</b></color> \r\n - {0:f2} hours\r\n", hoursPerCycle));
+
+            if (string.IsNullOrEmpty(repairSkill) == false)
+            {
+                moduleInfo.Append("<color=#7FFF00><b>Repair Skill:</b></color>\r\n");
+                moduleInfo.Append(" - " + repairSkill + "\r\n");
+            }
+
+            if (string.IsNullOrEmpty(repairResource) == false)
+            {
+                moduleInfo.Append("<color=#7FFF00><b>Repair Resource:</b></color>\r\n");
+                moduleInfo.Append(" - " + repairResource + ": " + string.Format("{0:f2}\r\n", repairAmount));
+            }
 
             return moduleInfo.ToString();
         }
@@ -116,42 +144,160 @@ namespace WildBlueIndustries
                 return;
 
             //Setup
-            fakeExperiment = new FakeExperimentResults();
-            fakeExperiment.part = this.part;
-            fakeExperiment.transmitDelegate = transmitResults;
             transmitHelper.part = this.part;
+            transmitHelper.transmitCompleteDelegate = TransmitComplete;
+            scienceLabView.part = this.part;
 
+            //Feedback messages
             attemptCriticalFail = kResearchCriticalFail;
             attemptCriticalSuccess = kResearchCriticalSuccess;
             attemptFail = kResearchFail;
             attemptSuccess = kResearchSuccess;
+
+            //Repairs
+            if (isBroken)
+            {
+                StopConverter();
+                Events["RepairLab"].active = true;
+                Events["StartResourceConverter"].active = false;
+                status = kNeedsRepairs;
+            }
+
+            else
+            {
+                Events["RepairLab"].active = false;
+                status = "";
+            }
+        }
+
+        [KSPEvent(guiActiveUnfocused = true, unfocusedRange = 3f, guiName = "Perform repairs", guiActiveEditor = false, guiActive = true)]
+        public virtual void RepairLab()
+        {
+            double repairUnits = calculateRepairCost();
+
+            //Not enough resources to effect repairs? Tell the player.
+            if (repairUnits < 0.0f)
+            {
+                string message = string.Format(notEnoughResourcesToRepair, this.part.partInfo.title, repairAmount, repairResource);
+                ScreenMessages.PostScreenMessage(message, kMessageDuration, ScreenMessageStyle.UPPER_CENTER);
+                return;
+            }
+
+            //We have enough, deduct the repair cost
+            FlightGlobals.ActiveVessel.rootPart.RequestResource(repairResource, repairUnits, ResourceFlowMode.ALL_VESSEL);
+
+            //Finally, unset broken.
+            isBroken = false;
+            Events["RepairLab"].active = false;
+            Events["StartResourceConverter"].active = true;
         }
 
         #endregion
 
         #region Helpers
+
+        protected virtual double calculateRepairCost()
+        {
+            double repairUnits = repairAmount;
+            double totalAmount;
+            List<ProtoCrewMember> crewMembers = FlightGlobals.ActiveVessel.GetVesselCrew();
+            Experience.ExperienceTrait experience;
+            bool repairSkillFound = false;
+
+            //Make sure we have the right skill to repair the lab.
+            if (string.IsNullOrEmpty(repairSkill) == false)
+            {
+                foreach (ProtoCrewMember crew in crewMembers)
+                {
+                    experience = crew.experienceTrait;
+                    if (experience.TypeName == repairSkill)
+                    {
+                        repairUnits = repairUnits * (0.9f - (experience.CrewMemberExperienceLevel() * 0.1f));
+                        repairSkillFound = true;
+                        break;
+                    }
+                }
+
+                if (!repairSkillFound)
+                    return -1.0f;
+            }
+
+            //make sure the ship has enough of the resource
+            totalAmount = ResourceHelper.GetTotalResourceAmount(repairResource, this.part.vessel);
+            if (totalAmount < repairUnits)
+                return -1.0f;
+
+            return repairUnits;
+        }
+
         public override double GetSecondsPerCycle()
         {
             if (totalCrewSkill == 0)
                 totalCrewSkill = GetTotalCrewSkill();
-            double researchTime = Math.Pow((hoursPerCycle / (kBaseResearchDivisor + (totalCrewSkill / 10.0f))), 3.0f);
+            double researchTime = hoursPerCycle - (totalCrewSkill / 15.0f);
 
             return researchTime * 3600;
         }
 
-        protected virtual void transmitResults(ScienceData data)
+        public virtual void TransmitResults()
         {
-            if (transmitHelper.TransmitToKSC(scienceAdded, reputationAdded, fundsAdded))
+            transmitHelper.TransmitToKSC(scienceAdded, reputationAdded, fundsAdded, -1.0f, experimentID);
+        }
+
+        public virtual void TransmitComplete()
+        {
+            scienceAdded = 0f;
+            reputationAdded = 0f;
+            fundsAdded = 0f;
+        }
+
+        public virtual void TransferToScienceLab()
+        {
+            ModuleScienceLab lab = null;
+            List<ModuleScienceLab> labs = this.part.vessel.FindPartModulesImplementing<ModuleScienceLab>();
+
+            foreach (ModuleScienceLab scienceLab in labs)
             {
+                if (scienceLab.isEnabled && scienceLab.enabled)
+                {
+                    lab = scienceLab;
+                    break;
+                }
+            }
+
+            //No lab on the vessel? Then we're done.
+            if (lab == null)
+            {
+                Log("No ModuleScienceLab to transfer to!");
+                return;
+            }
+
+            //Transfer as much as we can to the lab.
+            float availableStorage = lab.dataStorage - lab.dataStored;
+            if (scienceAdded < availableStorage)
+            {
+                lab.dataStored += scienceAdded;
                 scienceAdded = 0f;
-                reputationAdded = 0f;
-                fundsAdded = 0f;
+            }
+
+            else
+            {
+                lab.dataStored = lab.dataStorage;
+                scienceAdded -= availableStorage;
             }
         }
 
         protected override void onCriticalFailure()
         {
             base.onCriticalFailure();
+            StopConverter();
+            if (string.IsNullOrEmpty(repairResource) == false)
+            {
+                isBroken = true;
+                Events["RepairLab"].active = true;
+                Events["StartResourceConverter"].active = false;
+                status = kNeedsRepairs;
+            }
         }
 
         protected override void onCriticalSuccess()

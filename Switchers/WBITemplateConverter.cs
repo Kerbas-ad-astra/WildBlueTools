@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -52,6 +52,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public bool usePrimaryTemplate = true;
 
+        [KSPField]
+        public string techRequired = string.Empty;
+
         //Should the player pay to reconfigure the module?
         public static bool payForReconfigure = true;
 
@@ -63,6 +66,7 @@ namespace WildBlueIndustries
         protected float reconfigureCost;
         protected float reconfigureCostModifier;
         protected WBIResourceSwitcher switcher;
+        protected bool allowSwitch = true;
 
         public override void OnStart(StartState state)
         {
@@ -70,13 +74,15 @@ namespace WildBlueIndustries
 
             switcher = this.part.FindModuleImplementing<WBIResourceSwitcher>();
 
+            //Tech check
             updateTemplate();
         }
 
         [KSPAction("Toggle Template")]
         public virtual void ToggleTemplateAction(KSPActionParam param)
         {
-            ToggleTemplate();
+            if (allowSwitch)
+                ToggleTemplate();
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiActiveUnfocused = true, unfocusedRange = 3.0f, guiName = "Toggle Template")]
@@ -87,6 +93,20 @@ namespace WildBlueIndustries
                 usePrimaryTemplate = !usePrimaryTemplate;
 
                 updateTemplate();
+            }
+        }
+
+        protected void checkForUpgrade()
+        {
+            //If the player hasn't unlocked the upgradeTech node yet, then hide the RCS functionality.
+            if (ResearchAndDevelopment.Instance != null && !string.IsNullOrEmpty(techRequired))
+            {
+                //If the tech node hasn't been researched yet then hide the switch capability
+                if (ResearchAndDevelopment.GetTechnologyState(techRequired) != RDTech.State.Available)
+                {
+                    Events["ToggleTemplate"].active = false;
+                    allowSwitch = false;
+                }
             }
         }
 
