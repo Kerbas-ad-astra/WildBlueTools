@@ -113,18 +113,6 @@ namespace WildBlueIndustries
                 _ignoreTemplateModules = value;
         }
 
-        protected override void initModuleGUI()
-        {
-            base.initModuleGUI();
-            bool showNextPrevButtons = HighLogic.LoadedSceneIsEditor ? true : false;
-
-            //Next/prev buttons
-            Events["NextType"].guiActive = showNextPrevButtons;
-            Events["NextType"].active = showNextPrevButtons;
-            Events["PrevType"].guiActive = showNextPrevButtons;
-            Events["PrevType"].active = showNextPrevButtons;
-        }
-
         #endregion
 
         #region Helpers

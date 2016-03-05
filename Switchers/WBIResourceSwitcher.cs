@@ -1143,6 +1143,8 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActive = false;
                 Events["PrevType"].guiActiveEditor = false;
                 Events["PrevType"].guiActiveUnfocused = false;
+                Events["NextType"].active = true;
+                Events["PrevType"].active = true;
             }
             else if (templatesModel.templateNodes.Count<ConfigNode>() >= 4)
             {
@@ -1152,6 +1154,8 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActive = true;
                 Events["PrevType"].guiActiveEditor = true;
                 Events["PrevType"].guiActiveUnfocused = true;
+                Events["NextType"].active = true;
+                Events["PrevType"].active = true;
             }
 
         }
