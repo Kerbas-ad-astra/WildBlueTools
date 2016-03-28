@@ -49,7 +49,7 @@ namespace WildBlueIndustries
         private string _resourcesToKeep = "NONE";
 
         //Name of the template types allowed
-        private string _templateTypes;
+        private string _templateTags;
 
         //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
         private string _defaultTemplate;
@@ -359,9 +359,24 @@ namespace WildBlueIndustries
                 else
                     updateResourcesFromTemplate(nodeTemplate);
 
-                //Hide previous template type button?
-                if (templatesModel.templateNodes.Length >= 4)
+                //Hide template type buttons?
+                if (templatesModel.templateNodes.Length == 1)
                 {
+                    Events["PrevType"].guiActiveUnfocused = false;
+                    Events["PrevType"].guiActiveEditor = false;
+                    Events["PrevType"].guiActive = false;
+
+                    Events["NextType"].guiActiveUnfocused = false;
+                    Events["NextType"].guiActiveEditor = false;
+                    Events["NextType"].guiActive = false;
+                }
+
+                else if (templatesModel.templateNodes.Length >= 4)
+                {
+                    Events["NextType"].guiActiveUnfocused = true;
+                    Events["NextType"].guiActiveEditor = true;
+                    Events["NextType"].guiActive = true;
+
                     Events["PrevType"].guiActive = true;
                     Events["PrevType"].guiActiveEditor = true;
                     Events["PrevType"].guiActiveUnfocused = true;
@@ -369,6 +384,10 @@ namespace WildBlueIndustries
 
                 else
                 {
+                    Events["NextType"].guiActiveUnfocused = true;
+                    Events["NextType"].guiActiveEditor = true;
+                    Events["NextType"].guiActive = true;
+
                     Events["PrevType"].guiActiveUnfocused = false;
                     Events["PrevType"].guiActiveEditor = false;
                     Events["PrevType"].guiActive = false;
@@ -556,15 +575,14 @@ namespace WildBlueIndustries
                 protoNode = protoPartNodes[protoNodeKey];
 
                 //Name of the nodes to use as templates
-                if (string.IsNullOrEmpty(templateNodes))
-                    templateNodes = protoNode.GetValue("templateNodes");
+                templateNodes = protoNode.GetValue("templateNodes");
 
                 //Also get template types
-                _templateTypes = protoNode.GetValue("templateTypes");
+                _templateTags = protoNode.GetValue("templateTags");
             }
 
             //Create the templatesModel
-            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTypes);
+            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTags);
 
             //If we have resources in our node then load them.
             if (resourceNodes != null)
@@ -696,7 +714,7 @@ namespace WildBlueIndustries
         #region Helpers
         protected virtual void updateResourcesFromTemplate(ConfigNode nodeTemplate)
         {
-            string templateType = nodeTemplate.GetValue("templateType");
+            string templateTags = nodeTemplate.GetValue("templateTags");
             PartResource resource = null;
             string value;
             float capacityModifier = capacityFactor;
@@ -732,7 +750,7 @@ namespace WildBlueIndustries
                     resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
-                else if (capacityFactorTypes.Contains(templateType))
+                else if (capacityFactorTypes.Contains(templateTags))
                     resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
@@ -751,7 +769,7 @@ namespace WildBlueIndustries
         {
             PartResource resource = null;
             string value;
-            string templateType = nodeTemplate.GetValue("templateType");
+            string templateTags = nodeTemplate.GetValue("templateTags");
             float capacityModifier = capacityFactor;
 
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
@@ -830,7 +848,7 @@ namespace WildBlueIndustries
                     resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
-                else if (capacityFactorTypes.Contains(templateType))
+                else if (capacityFactorTypes.Contains(templateTags))
                     resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
@@ -1030,7 +1048,7 @@ namespace WildBlueIndustries
                 templateNodes = protoNode.GetValue("templateNodes");
 
             //Also get template types
-            _templateTypes = protoNode.GetValue("templateTypes");
+            _templateTags = protoNode.GetValue("templateTags");
 
             //Set the defaults. We'll need them when we're in the editor
             //because the persistent KSP field seems to only apply to savegames.
@@ -1113,7 +1131,7 @@ namespace WildBlueIndustries
             if (templatesModel == null)
                 templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log));
             templatesModel.templateNodeName = templateNodes;
-            templatesModel.templateTypes = _templateTypes;
+            templatesModel.templateTags = _templateTags;
 
             if (templatesModel.templateNodes == null)
             {

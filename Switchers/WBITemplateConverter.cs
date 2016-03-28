@@ -112,23 +112,23 @@ namespace WildBlueIndustries
 
         protected void updateTemplate()
         {
-            string templateType;
+            string templateNodes;
 
             if (usePrimaryTemplate)
             {
-                templateType = primaryTemplate;
+                templateNodes = primaryTemplate;
                 Events["ToggleTemplate"].guiName = secondaryTemplateGUIName;
             }
 
             else
             {
-                templateType = secondaryTemplate;
+                templateNodes = secondaryTemplate;
                 Events["ToggleTemplate"].guiName = primaryTemplateGUIName;
             }
 
-            if (switcher.templateNodes != templateType)
+            if (switcher.templateNodes != templateNodes)
             {
-                switcher.templateNodes = templateType;
+                switcher.templateNodes = templateNodes;
                 switcher.initTemplates();
                 switcher.CurrentTemplateIndex = 0;
                 switcher.ReloadTemplate();

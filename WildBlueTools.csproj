@@ -52,6 +52,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GUI\ConvertibleStorageView.cs" />
     <Compile Include="GUI\ScienceLabResultsView.cs" />
     <Compile Include="Utilities\ButtonClickDelegate.cs" />
     <Compile Include="PropModules\InternalPlasmaScreen.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Utilities\WBIParachuteHelper.cs" />
     <Compile Include="PropModules\WBIInternalButtonCabinLight.cs" />
     <Compile Include="PropModules\WBIPropStateHelper.cs" />
+    <Compile Include="Converters\WBIConvertibleStorage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

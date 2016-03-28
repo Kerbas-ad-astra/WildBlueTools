@@ -45,6 +45,8 @@ namespace WildBlueIndustries
                 return true;
             if (!payForReconfigure)
                 return true;
+            if (reconfigureCost == 0f)
+                return true;
             PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
             double partsPaid = this.part.RequestResource(definition.id, reconfigureCost, ResourceFlowMode.ALL_VESSEL);
 
@@ -68,12 +70,19 @@ namespace WildBlueIndustries
             string value;
             bool canAffordCost = false;
 
+            //If we don't have the required resource defined in the template then we can
+            //automatically afford to reconfigure.
+            if (templatesModel[templateName].HasValue("rocketParts") == false)
+            {
+                reconfigureCost = 0f;
+                return true;
+            }
+
             requriredResource = templatesModel[templateName].GetValue("rocketParts");
             if (string.IsNullOrEmpty(requriredResource) == false)
             {
                 float reconfigureAmount = float.Parse(requriredResource);
-                PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
-                Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
+                double totalResources = ResourceHelper.GetTotalResourceAmount("RocketParts", this.part.vessel);
 
                 //An inflatable part that hasn't been inflated yet is an automatic pass.
                 if (isInflatable && !isDeployed)
@@ -98,10 +107,7 @@ namespace WildBlueIndustries
                 }
 
                 //now check to make sure the vessel has enough parts.
-                if (resource == null)
-                    canAffordCost =  false;
-
-                else if (resource.amount < reconfigureCost)
+                if (totalResources < reconfigureCost)
                     canAffordCost =  false;
 
                 else

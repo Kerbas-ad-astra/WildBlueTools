@@ -35,20 +35,20 @@ namespace WildBlueIndustries
         public LogDelegate logDelegate = null;
         public ConfigNode[] templateNodes;
         private string _templateNodeName;
-        private string _templateTypes;
+        private string _templateTags;
         private static List<string> partTokens;
 
         #region API
-        public string templateTypes
+        public string templateTags
         {
             get
             {
-                return _templateTypes;
+                return _templateTags;
             }
 
             set
             {
-                _templateTypes = value;
+                _templateTags = value;
             }
         }
 
@@ -96,14 +96,14 @@ namespace WildBlueIndustries
             }
         }
 
-        public TemplatesModel(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string templateTypes = "templateTypes")
+        public TemplatesModel(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string templateTags = "templateTags")
         {
             this.part = part;
             this.vessel = vessel;
             this.logDelegate = logDelegate;
 
             _templateNodeName = template;
-            _templateTypes = templateTypes;
+            _templateTags = templateTags;
 
             this.templateNodes = GameDatabase.Instance.GetConfigNodes(template);
             if (templateNodes == null)
@@ -223,14 +223,14 @@ namespace WildBlueIndustries
             }
 
             //If we need a specific template type then check for it.
-            value = nodeTemplate.GetValue("templateType");
+            value = nodeTemplate.GetValue("templateTags");
             if (string.IsNullOrEmpty(value) == false)
             {
-                //if we have template types then see if the templateType is in the list.
+                //if we have template types then see if the templateTags is in the list.
                 //Otherwise, we're good.
-                if (string.IsNullOrEmpty(_templateTypes) == false)
+                if (string.IsNullOrEmpty(_templateTags) == false)
                 {
-                    if (_templateTypes.Contains(value) == false)
+                    if (_templateTags.Contains(value) == false)
                     {
                         return EInvalidTemplateReasons.RequiredModuleNotFound;
                     }

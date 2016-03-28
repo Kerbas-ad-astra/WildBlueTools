@@ -49,6 +49,7 @@ namespace WildBlueIndustries
         public GetModuleLogo getModuleLogoDelegate = null;
         public TemplateHasOpsWindow teplateHasOpsWindowDelegate = null;
         public DrawTemplateOps drawTemplateOpsDelegate = null;
+        public int templateCount = 0;
 
         private Vector2 _scrollPosConverters;
         private Vector2 _scrollPosResources;
@@ -266,14 +267,23 @@ namespace WildBlueIndustries
 
         protected void drawEditorGUI()
         {
+            if (templateCount == 1)
+            {
+                GUILayout.Label("<color=yellow>There is only one template, no other options.</color>");
+                return;
+            }
+
             //Next/Prev buttons
             if (GUILayout.Button("Next: " + nextName))
                 if (nextModuleDelegate != null)
                     nextModuleDelegate();
 
-            if (GUILayout.Button("Prev: " + prevName))
-                if (prevModuleDelegate != null)
-                    prevModuleDelegate();
+            if (templateCount >= 4)
+            {
+                if (GUILayout.Button("Prev: " + prevName))
+                    if (prevModuleDelegate != null)
+                        prevModuleDelegate();
+            }
 
             if (!fieldReconfigurable)
                 GUILayout.Label("<color=yellow>NOTE: Cannot be reconfigured after launch.</color>");

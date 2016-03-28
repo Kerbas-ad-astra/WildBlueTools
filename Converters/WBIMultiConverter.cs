@@ -214,6 +214,9 @@ namespace WildBlueIndustries
             moduleOpsView.techResearched = fieldReconfigurable & hasRequiredTechToReconfigure;
             moduleOpsView.fieldReconfigurable = fieldReconfigurable;
 
+            //Templates
+            moduleOpsView.templateCount = templatesModel.templateNodes.Length;
+
             //Set preview, next, and previous
             if (HighLogic.LoadedSceneIsEditor == false)
             {
