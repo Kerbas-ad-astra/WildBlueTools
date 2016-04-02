@@ -41,9 +41,9 @@ namespace WildBlueIndustries
             storageView.setTemplate = SwitchTemplateType;
         }
 
-        public override void RedecorateModule(bool payForRedecoration = true, bool loadTemplateResources = true)
+        public override void RedecorateModule(bool loadTemplateResources = true)
         {
-            base.RedecorateModule(payForRedecoration, loadTemplateResources);
+            base.RedecorateModule(loadTemplateResources);
 
             hideEditorButtons();
         }
@@ -240,6 +240,12 @@ namespace WildBlueIndustries
             }
 
             return moduleInfo.ToString();
+        }
+
+        public void OnGUI()
+        {
+            if (storageView.IsVisible())
+                storageView.DrawWindow();
         }
 
     }

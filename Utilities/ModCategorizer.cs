@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
-using PartListCategories;
 using RUI.Icons.Selectable;
+using KSP.UI.Screens;
 
 /*
 Source code copyright 2016, by Michael Billard (Angel-125)
@@ -62,7 +62,7 @@ namespace WildBlueIndustries
             char[] delimiters = { ',' };
             Icon categoryIcon;
             PartCategorizer.Category categoryFilter;
-            RUIToggleButtonTyped categoryButton;
+            KSP.UI.UIRadioButton categoryButton;
 
             foreach (ConfigNode configNode in nodes)
             {
@@ -92,8 +92,8 @@ namespace WildBlueIndustries
                 PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.IsPartInCat(p));
 
                 categoryButton = categoryFilter.button.activeButton;
-                categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
-                categoryButton.SetTrue(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
+//                categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
+//                categoryButton.SetTrue(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
             }
         }
 

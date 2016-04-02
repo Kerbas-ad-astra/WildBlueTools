@@ -79,6 +79,7 @@ namespace WildBlueIndustries
         protected bool confirmResourceSwitch = false;
         protected bool deflateConfirmed = false;
         protected bool dumpConfirmed = false;
+        protected int originalCrewCapacity;
         protected TemplatesModel templatesModel;
         protected Dictionary<string, ConfigNode> parameterOverrides = new Dictionary<string, ConfigNode>();
         protected Dictionary<string, double> resourceMaxAmounts = new Dictionary<string, double>();
@@ -250,9 +251,7 @@ namespace WildBlueIndustries
             }
 
             //Dirty the GUI
-            UIPartActionWindow tweakableUI = Utils.FindActionWindow(this.part);
-            if (tweakableUI != null)
-                tweakableUI.displayDirty = true;
+            MonoUtilities.RefreshContextWindows(this.part);
         }
 
         public virtual void UpdateContentsAndGui(int templateIndex)
@@ -295,21 +294,10 @@ namespace WildBlueIndustries
             RedecorateModule();
 
             //Update the resource panel
-            if (HighLogic.LoadedSceneIsFlight && ResourceDisplay.Instance != null)
-            {
-                try
-                {
-                    ResourceDisplay.Instance.Refresh();
-                    ResourceDisplay.Instance.Update();
-                }
-                catch (Exception ex)
-                {
-                    Log("Exception while trying to update resource panel: " + ex.ToString());
-                }
-            }
+            MonoUtilities.RefreshContextWindows(this.part);
         }
 
-        public virtual void RedecorateModule(bool payForRedecoration = true, bool loadTemplateResources = true)
+        public virtual void RedecorateModule(bool loadTemplateResources = true)
         {
             double maxAmount = 0;
             string resourceName = "";
@@ -317,7 +305,7 @@ namespace WildBlueIndustries
 
             try
             {
-                Log("RedecorateModule called. payForRedecoration: " + payForRedecoration.ToString() + " loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
+                Log("RedecorateModule called. loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
                 if (templatesModel == null)
                     return;
                 if (templatesModel.templateNodes == null)
@@ -351,6 +339,14 @@ namespace WildBlueIndustries
                         }
                     }
                 }
+
+                //Crew capacity
+                //The part itself has an inflated/deflated crew capacity, as do certain templates.
+                //Priority goes to inflated parts and their crew capacities.
+                if (!isInflatable && nodeTemplate.HasValue("CrewCapacity"))
+                    this.part.CrewCapacity = int.Parse(nodeTemplate.GetValue("CrewCapacity"));
+                else if (!isInflatable)
+                    this.part.CrewCapacity = originalCrewCapacity;
 
                 //Load the template resources into the module.
                 OnEditorAttach();
@@ -394,7 +390,7 @@ namespace WildBlueIndustries
                 }
 
                 //Call the OnRedecorateModule method to give others a chance to do stuff
-                OnRedecorateModule(nodeTemplate, payForRedecoration);
+                OnRedecorateModule(nodeTemplate);
 
                 //Finally, change the decals on the part.
                 updateDecalsFromTemplate(nodeTemplate);
@@ -544,7 +540,7 @@ namespace WildBlueIndustries
             return true;
         }
 
-        public virtual void OnRedecorateModule(ConfigNode nodeTemplate, bool payForRedecoration)
+        public virtual void OnRedecorateModule(ConfigNode nodeTemplate)
         {
             //Dummy method
         }
@@ -680,6 +676,9 @@ namespace WildBlueIndustries
             if (!HighLogic.LoadedSceneIsEditor && !HighLogic.LoadedSceneIsFlight)
                 return;
 
+            //Original crew capacity
+            originalCrewCapacity = this.part.CrewCapacity;
+
             //Initialize the templates
             initTemplates();
 
@@ -692,7 +691,7 @@ namespace WildBlueIndustries
             //When we do, we don't make the player pay for the redecoration, and we want to preserve
             //the part's existing resources, not to mention the current settings for the converters.
             //Also, if we have converters already then we've loaded their states during the OnLoad method call.
-            RedecorateModule(false, loadTemplateResources);
+            RedecorateModule(loadTemplateResources);
 
             //Init the module GUI
             initModuleGUI();
@@ -967,8 +966,9 @@ namespace WildBlueIndustries
                 foreach (Transform target in targets)
                 {
                     target.gameObject.SetActive(isVisible);
-                    if (target.gameObject.collider != null)
-                        target.gameObject.collider.enabled = isVisible;
+                    Collider collider = target.gameObject.GetComponent<Collider>();
+                    if (collider != null)
+                        collider.enabled = isVisible;
                 }
             }
         }

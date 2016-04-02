@@ -91,7 +91,7 @@ namespace WildBlueIndustries
             base.OnStart(state);
         }
 
-        public override void OnRedecorateModule(ConfigNode templateNode, bool payForRedecoration)
+        public override void OnRedecorateModule(ConfigNode templateNode)
         {
             Log("OnRedecorateModule called");
 

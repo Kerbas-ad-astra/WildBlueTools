@@ -196,6 +196,19 @@ namespace WildBlueIndustries
 
         #region Helpers
 
+        protected void OnGUI()
+        {
+            try
+            {
+                if (scienceLabView.IsVisible())
+                    scienceLabView.DrawWindow();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Error in WBIBasicScienceLab-OnGUI: " + ex.ToString());
+            }
+        }
+
         protected virtual double calculateRepairCost()
         {
             double repairUnits = repairAmount;

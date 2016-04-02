@@ -81,7 +81,7 @@ namespace WildBlueIndustries
             soundClip.audio.loop = true;
 
             soundClip.audio.rolloffMode = AudioRolloffMode.Logarithmic;
-            soundClip.audio.panLevel = 1f;
+            soundClip.audio.panStereo = 1f;
             soundClip.audio.dopplerLevel = 0f;
 
             soundClip.audio.playOnAwake = false;

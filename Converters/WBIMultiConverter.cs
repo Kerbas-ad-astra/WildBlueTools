@@ -33,7 +33,7 @@ namespace WildBlueIndustries
         //Helper objects
         protected ITemplateOps templateOps;
         protected MultiConverterModel _multiConverter;
-        protected OpsView moduleOpsView;
+        protected OpsView moduleOpsView = new OpsView();
 
         #region User Events & API
         public Texture GetModuleLogo(string templateName)
@@ -232,7 +232,7 @@ namespace WildBlueIndustries
                     moduleOpsView.prevName = templatesModel[templateIndex].GetValue("shortName");
             }
 
-            moduleOpsView.ToggleVisible();
+            moduleOpsView.SetVisible(true);
         }
         #endregion
 
@@ -408,8 +408,7 @@ namespace WildBlueIndustries
         {
             if (templatesModel[templateIndex].HasValue("rocketParts"))
             {
-                float cost = float.Parse(templatesModel[templateIndex].GetValue("rocketParts"));
-                cost *= materialCostModifier;
+                float cost = calculateRemodelCost(templateIndex);
                 return string.Format("{0:f2}", cost);
             }
             else
@@ -438,13 +437,20 @@ namespace WildBlueIndustries
 
         public void OnGUI()
         {
-            if (moduleOpsView != null)
-                moduleOpsView.OnGUI();
+            try
+            {
+                if (moduleOpsView.IsVisible())
+                    moduleOpsView.DrawWindow();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Error in WBIMultiConverter-OnGUI: " + ex.ToString());
+            }
         }
 
-        public override void OnRedecorateModule(ConfigNode templateNode, bool payForRedecoration)
+        public override void OnRedecorateModule(ConfigNode templateNode)
         {
-            base.OnRedecorateModule(templateNode, payForRedecoration);
+            base.OnRedecorateModule(templateNode);
 
             //Play a nice construction sound effect
 
@@ -491,25 +497,31 @@ namespace WildBlueIndustries
             }
         }
 
-        protected virtual void createModuleOpsView()
-        {
-            Log("createModuleOpsView called");
+         protected virtual void createModuleOpsView()
+         {
+             Log("createModuleOpsView called");
 
-            moduleOpsView = new OpsView();
-            moduleOpsView.converters = _multiConverter.converters;
-            moduleOpsView.part = this.part;
-            moduleOpsView.resources = this.part.Resources;
-            moduleOpsView.nextModuleDelegate = new NextModule(NextType);
-            moduleOpsView.prevModuleDelegate = new PrevModule(PrevType);
-            moduleOpsView.nextPreviewDelegate = new NextPreviewModule(PreviewNextTemplate);
-            moduleOpsView.prevPreviewDelegate = new PrevPreviewModule(PreviewPrevTemplate);
-            moduleOpsView.getModuleInfoDelegate = new GetModuleInfo(GetModuleInfo);
-            moduleOpsView.changeModuleTypeDelegate = new ChangeModuleType(SwitchTemplateType);
-            moduleOpsView.getModuleLogoDelegate = new GetModuleLogo(GetModuleLogo);
-            moduleOpsView.teplateHasOpsWindowDelegate = new TemplateHasOpsWindow(templateHasOpsWindow);
-            moduleOpsView.drawTemplateOpsDelegate = new DrawTemplateOps(drawTemplateOps);
-            moduleOpsView.GetPartModules();
-        }
+             try
+             {
+                 moduleOpsView.converters = _multiConverter.converters;
+                 moduleOpsView.part = this.part;
+                 moduleOpsView.resources = this.part.Resources;
+                 moduleOpsView.nextModuleDelegate = new NextModule(NextType);
+                 moduleOpsView.prevModuleDelegate = new PrevModule(PrevType);
+                 moduleOpsView.nextPreviewDelegate = new NextPreviewModule(PreviewNextTemplate);
+                 moduleOpsView.prevPreviewDelegate = new PrevPreviewModule(PreviewPrevTemplate);
+                 moduleOpsView.getModuleInfoDelegate = new GetModuleInfo(GetModuleInfo);
+                 moduleOpsView.changeModuleTypeDelegate = new ChangeModuleType(SwitchTemplateType);
+                 moduleOpsView.getModuleLogoDelegate = new GetModuleLogo(GetModuleLogo);
+                 moduleOpsView.teplateHasOpsWindowDelegate = new TemplateHasOpsWindow(templateHasOpsWindow);
+                 moduleOpsView.drawTemplateOpsDelegate = new DrawTemplateOps(drawTemplateOps);
+                 moduleOpsView.GetPartModules();
+             }
+             catch (Exception ex)
+             {
+                 Debug.Log("Exception in createModuleOpsView: " + ex.ToString());
+             }
+         }
 
         protected override void hideEditorGUI(PartModule.StartState state)
         {

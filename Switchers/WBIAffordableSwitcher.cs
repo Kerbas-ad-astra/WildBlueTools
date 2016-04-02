@@ -61,6 +61,39 @@ namespace WildBlueIndustries
             return true;
         }
 
+        protected float calculateRemodelCost(int templateIndex)
+        {
+            string value;
+            string reconfigureResource = templatesModel[templateIndex].GetValue("rocketParts");
+            float remodelCost = 0f;
+
+            if (string.IsNullOrEmpty(reconfigureResource) == false)
+            {
+                float reconfigureAmount = float.Parse(reconfigureResource);
+                double totalResources = ResourceHelper.GetTotalResourceAmount("RocketParts", this.part.vessel);
+
+                //Get the current template's rocket part cost.
+                value = CurrentTemplate.GetValue("rocketParts");
+                if (string.IsNullOrEmpty(value) == false)
+                {
+                    float recycleAmount = float.Parse(value) * materialCostModifier;
+
+                    //calculate the amount of parts that we can recycle.
+                    recycleAmount *= calculateRecycleAmount();
+
+                    //Now recalculate rocketPartCost, accounting for the parts we can recycle.
+                    //A negative value means we'll get parts back, a positive number means we pay additional parts.
+                    //Ex: current configuration takes 1200 parts. new configuration takes 900.
+                    //We recycle 90% of the current configuration (1080 parts).
+                    //The reconfigure cost is: 900 - 1080 = -180 parts
+                    //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
+                    remodelCost = reconfigureAmount - recycleAmount;
+                }
+            }
+
+            return remodelCost;
+        }
+
         protected override bool canAffordReconfigure(string templateName)
         {
             if (HighLogic.LoadedSceneIsFlight == false)

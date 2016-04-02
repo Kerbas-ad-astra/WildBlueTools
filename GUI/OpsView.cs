@@ -50,10 +50,10 @@ namespace WildBlueIndustries
         public TemplateHasOpsWindow teplateHasOpsWindowDelegate = null;
         public DrawTemplateOps drawTemplateOpsDelegate = null;
         public int templateCount = 0;
+        public InfoView modSummary = new InfoView();
 
         private Vector2 _scrollPosConverters;
         private Vector2 _scrollPosResources;
-        private InfoView modSummary = new InfoView();
         private string moduleInfo;
         ModuleCommand commandModule;
         WBIResourceSwitcher switcher;
@@ -89,11 +89,11 @@ namespace WildBlueIndustries
             }
         }
 
-        public override void OnGUI()
+        public override void DrawWindow()
         {
-            base.OnGUI();
+            base.DrawWindow();
             if (modSummary.IsVisible())
-                modSummary.OnGUI();
+                modSummary.DrawWindow();
         }
 
         public void GetPartModules()
@@ -352,7 +352,6 @@ namespace WildBlueIndustries
                 if (getModuleInfoDelegate != null)
                 {
                     moduleInfo = getModuleInfoDelegate(previewName);
-                    InfoView modSummary = new InfoView();
                     Texture moduleLabel;
 
                     modSummary.ModuleInfo = moduleInfo;

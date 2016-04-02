@@ -205,6 +205,8 @@ namespace WildBlueIndustries
 
         protected void setObject(int objectNumber, bool startHidden = true)
         {
+            Collider collider = null;
+
             if (objectTransforms.Count == 0)
             {
                 Log("objectTransforms.Count = 0! Exiting");
@@ -218,10 +220,10 @@ namespace WildBlueIndustries
                     for (int j = 0; j < objectTransforms[i].Count; j++)
                     {
                         objectTransforms[i][j].gameObject.SetActive(false);
-
-                        if (objectTransforms[i][j].gameObject.collider != null)
+                        collider = objectTransforms[i][j].gameObject.GetComponent<Collider>();
+                        if (collider != null)
                         {
-                            objectTransforms[i][j].gameObject.collider.enabled = false;
+                            collider.enabled = false;
                         }
                     }
                 }
@@ -236,9 +238,10 @@ namespace WildBlueIndustries
             {
                 objectTransforms[objectNumber][i].gameObject.SetActive(true);
 
-                if (objectTransforms[objectNumber][i].gameObject.collider != null)
+                collider = objectTransforms[objectNumber][i].gameObject.GetComponent<Collider>();
+                if (collider != null)
                 {
-                    objectTransforms[objectNumber][i].gameObject.collider.enabled = true;
+                    collider.enabled = true;
                 }
             }
 

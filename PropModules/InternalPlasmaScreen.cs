@@ -36,6 +36,19 @@ namespace WildBlueIndustries
         protected double cycleStartTime;
         protected double elapsedTime;
 
+        protected void OnGUI()
+        {
+            try
+            {
+                if (screenView.IsVisible())
+                    screenView.DrawWindow();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Error in InternalPlasmaScreen-OnGUI: " + ex.ToString());
+            }
+        }
+
         public void Start()
         {
             if (HighLogic.LoadedSceneIsFlight == false)

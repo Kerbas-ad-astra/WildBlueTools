@@ -54,6 +54,19 @@ namespace WildBlueIndustries
             }
         }
 
+        private void OnGUI()
+        {
+            try
+            {
+                if (screenView.IsVisible())
+                    screenView.DrawWindow();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Error in WBIPlasmaTV-OnGUI: " + ex.ToString());
+            }
+        }
+
         public void ShowImage(Texture texture, string textureFilePath)
         {
             Transform[] targets;
