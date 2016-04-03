@@ -18,6 +18,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public delegate void ModuleRedecoratedEvent(ConfigNode templateNode);
+    public delegate void ResourcesDumpedEvent();
+
     public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier
     {
         private static string MAIN_TEXTURE = "_MainTex";
@@ -25,6 +28,10 @@ namespace WildBlueIndustries
 
         [KSPField(isPersistant = true)]
         public int currentVolume;
+
+        //Events
+        public event ModuleRedecoratedEvent onModuleRedecorated;
+        public event ResourcesDumpedEvent onResourcesDumped;
 
         //Index of the current module template we're using.
         public int CurrentTemplateIndex;
@@ -111,6 +118,9 @@ namespace WildBlueIndustries
 
             foreach (PartResource resource in this.part.Resources)
                 resource.amount = 0;
+
+            if (onResourcesDumped != null)
+                onResourcesDumped();
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Decals")]
@@ -394,6 +404,9 @@ namespace WildBlueIndustries
 
                 //Finally, change the decals on the part.
                 updateDecalsFromTemplate(nodeTemplate);
+
+                if (onModuleRedecorated != null)
+                    onModuleRedecorated(nodeTemplate);
 
                 Log("Module redecorated.");
             }
