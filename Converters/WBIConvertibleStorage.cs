@@ -108,7 +108,7 @@ namespace WildBlueIndustries
 
                     //Yup, we can afford it
                     //Pay the reconfigure cost
-                    payPartsCost();
+                    payPartsCost(templatesModel.FindIndexOfTemplate(templateName));
                 }
 
                 //Update contents
@@ -141,11 +141,12 @@ namespace WildBlueIndustries
             storageView.templateName = templatesModel[templateIndex].GetValue("shortName");
 
             //Required resource
-            storageView.requiredResource = "RocketParts";
+            if (templatesModel[templateIndex].HasValue("requiredResource"))
+                storageView.requiredResource = templatesModel[templateIndex].GetValue("requiredResource");
 
             //Resource cost
-            if (templatesModel[templateIndex].HasValue("rocketParts"))
-                storageView.resourceCost = float.Parse(templatesModel[templateIndex].GetValue("rocketParts"));
+            if (templatesModel[templateIndex].HasValue("requiredAmount"))
+                storageView.resourceCost = float.Parse(templatesModel[templateIndex].GetValue("requiredAmount"));
             else
                 storageView.resourceCost = 0f;
 

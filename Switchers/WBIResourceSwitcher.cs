@@ -164,7 +164,7 @@ namespace WildBlueIndustries
             {
                 string shortName = templatesModel[templateIndex].GetValue("shortName");
                 if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
-                    payPartsCost();
+                    payPartsCost(templateIndex);
                 else
                     return;
                 UpdateContentsAndGui(templateIndex);
@@ -197,7 +197,7 @@ namespace WildBlueIndustries
             {
                 string shortName = templatesModel[templateIndex].GetValue("shortName");
                 if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
-                    payPartsCost();
+                    payPartsCost(templateIndex);
                 else
                     return;
                 UpdateContentsAndGui(templateIndex);
@@ -1193,7 +1193,7 @@ namespace WildBlueIndustries
         #endregion
 
         #region ReconfigurationCosts
-        protected virtual bool payPartsCost()
+        protected virtual bool payPartsCost(int templateIndex)
         {
              return true;
         }

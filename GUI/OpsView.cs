@@ -40,6 +40,7 @@ namespace WildBlueIndustries
         public string prevName;
         public string previewName;
         public string cost;
+        public string requiredResource;
         public NextModule nextModuleDelegate = null;
         public PrevModule prevModuleDelegate = null;
         public NextPreviewModule nextPreviewDelegate = null;
@@ -312,7 +313,7 @@ namespace WildBlueIndustries
             string moduleInfo;
 
             GUILayout.Label("<color=white>Current Preview: " + previewName + "</color>");
-            GUILayout.Label("<color=white>Reconfiguration Cost: " + cost + " RocketParts</color>");
+            GUILayout.Label("<color=white>Reconfiguration Cost: " + cost + " " + requiredResource + "</color>");
 
             //Make sure we have something to display
             if (string.IsNullOrEmpty(previewName))

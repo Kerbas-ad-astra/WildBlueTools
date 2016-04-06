@@ -119,6 +119,7 @@ namespace WildBlueIndustries
             //Set preview name to the new template's name
             moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
             moduleOpsView.cost = getTemplateCost(templateIndex);
+            moduleOpsView.requiredResource = templatesModel[templateIndex].GetValue("requiredResource");
 
             //Get next template name
             templateIndex = templatesModel.GetNextUsableIndex(templateIndex);
@@ -140,6 +141,7 @@ namespace WildBlueIndustries
             //Set preview name to the new template's name
             moduleOpsView.previewName = templatesModel[templateIndex].GetValue("shortName");
             moduleOpsView.cost = getTemplateCost(templateIndex);
+            moduleOpsView.requiredResource = templatesModel[templateIndex].GetValue("requiredResource");
 
             //Get next template name (which will be the current template)
             moduleOpsView.nextName = templateName;
@@ -174,7 +176,7 @@ namespace WildBlueIndustries
 
                     //Yup, we can afford it
                     //Pay the reconfigure cost
-                    payPartsCost();
+                    payPartsCost(templatesModel.FindIndexOfTemplate(templateName));
                 }
 
                 //Update contents
@@ -222,6 +224,7 @@ namespace WildBlueIndustries
             {
                 moduleOpsView.previewName = shortName;
                 moduleOpsView.cost = getTemplateCost(templateIndex);
+                moduleOpsView.requiredResource = templatesModel[templateIndex].GetValue("requiredResource");
 
                 templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
                 if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
@@ -261,9 +264,10 @@ namespace WildBlueIndustries
 
         public override void ToggleInflation()
         {
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
+            string requiredName = CurrentTemplate.GetValue("requiredResource");
+            PartResourceDefinition definition = ResourceHelper.DefinitionForResource(requiredName);
             Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
-            string parts = CurrentTemplate.GetValue("rocketParts");
+            string parts = CurrentTemplate.GetValue("requiredAmount");
 
             if (string.IsNullOrEmpty(parts))
             {
@@ -287,7 +291,7 @@ namespace WildBlueIndustries
                     if (resource == null || resource.amount < adjustedPartCost)
                     {
                         notEnoughParts();
-                        string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} RocketParts to assemble.", partCost);
+                        string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} " + requiredName + " to assemble.", partCost);
                         ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                         return;
                     }
@@ -295,7 +299,7 @@ namespace WildBlueIndustries
                     //Yup, we can afford it
                     //Pay the reconfigure cost
                     reconfigureCost = adjustedPartCost;
-                    payPartsCost();
+                    payPartsCost(CurrentTemplateIndex);
 
                     // Toggle after payment.
                     base.ToggleInflation();
@@ -320,7 +324,7 @@ namespace WildBlueIndustries
                         if (availableStorage < recycleAmount)
                         {
                             float amountLost = recycleAmount - availableStorage;
-                            ScreenMessages.PostScreenMessage(string.Format("Module deflated, {0:f2} {1:s} lost due to insufficient storage.", amountLost, "RocketParts"), 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                            ScreenMessages.PostScreenMessage(string.Format("Module deflated, {0:f2} {1:s} lost due to insufficient storage.", amountLost, requiredName), 5.0f, ScreenMessageStyle.UPPER_CENTER);
 
                             //We'll only recycle what we have room to store.
                             recycleAmount = availableStorage;
@@ -328,7 +332,7 @@ namespace WildBlueIndustries
 
                         //Yup, we have the space
                         reconfigureCost = -recycleAmount;
-                        payPartsCost();
+                        payPartsCost(CurrentTemplateIndex);
                     }
                 }
             }
@@ -406,7 +410,7 @@ namespace WildBlueIndustries
         #region Helpers
         protected string getTemplateCost(int templateIndex)
         {
-            if (templatesModel[templateIndex].HasValue("rocketParts"))
+            if (templatesModel[templateIndex].HasValue("requiredAmount"))
             {
                 float cost = calculateRemodelCost(templateIndex);
                 return string.Format("{0:f2}", cost);

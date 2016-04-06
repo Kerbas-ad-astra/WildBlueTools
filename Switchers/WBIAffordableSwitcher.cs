@@ -39,7 +39,7 @@ namespace WildBlueIndustries
         protected float reconfigureCostModifier;
         protected string requriredResource;
 
-        protected override bool payPartsCost()
+        protected override bool payPartsCost(int templateIndex)
         {
             if (HighLogic.LoadedSceneIsFlight == false)
                 return true;
@@ -47,8 +47,13 @@ namespace WildBlueIndustries
                 return true;
             if (reconfigureCost == 0f)
                 return true;
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource("RocketParts");
-            double partsPaid = this.part.RequestResource(definition.id, reconfigureCost, ResourceFlowMode.ALL_VESSEL);
+            if (!templatesModel[templateIndex].HasValue("requiredResource"))
+                return true;
+
+            float remodelCost = calculateRemodelCost(templateIndex);
+            string resourceName = templatesModel[templateIndex].GetValue("requiredResource");
+            PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceName);
+            double partsPaid = this.part.RequestResource(definition.id, remodelCost, ResourceFlowMode.ALL_VESSEL);
 
             //Could we afford it?
             if (Math.Abs(partsPaid) / Math.Abs(reconfigureCost) < 0.999f)
@@ -63,17 +68,28 @@ namespace WildBlueIndustries
 
         protected float calculateRemodelCost(int templateIndex)
         {
-            string value;
-            string reconfigureResource = templatesModel[templateIndex].GetValue("rocketParts");
+            //string value;
+            string requiredAmount = templatesModel[templateIndex].GetValue("requiredAmount");
             float remodelCost = 0f;
+            string requiredSkill = "Engineer";
+            float materialModifier = materialCostModifier;
 
-            if (string.IsNullOrEmpty(reconfigureResource) == false)
+            if (templatesModel[templateIndex].HasValue("requiredSkill"))
+                requiredSkill = templatesModel[templateIndex].GetValue("requiredSkill");
+            calculateRemodelCostModifier(requiredSkill);
+
+            if (templatesModel[templateIndex].HasValue("ignoreMaterialModifier"))
+                materialModifier = 1.0f;
+
+            if (string.IsNullOrEmpty(requiredAmount) == false)
             {
-                float reconfigureAmount = float.Parse(reconfigureResource);
-                double totalResources = ResourceHelper.GetTotalResourceAmount("RocketParts", this.part.vessel);
+                Log("FRED materialModifier: " + materialModifier.ToString());
+                Log("FRED reconfigureCostModifier: " + reconfigureCostModifier.ToString());
+                remodelCost = float.Parse(requiredAmount) * materialModifier * reconfigureCostModifier;
 
+                /*
                 //Get the current template's rocket part cost.
-                value = CurrentTemplate.GetValue("rocketParts");
+                value = CurrentTemplate.GetValue("requiredAmount");
                 if (string.IsNullOrEmpty(value) == false)
                 {
                     float recycleAmount = float.Parse(value) * materialCostModifier;
@@ -89,6 +105,7 @@ namespace WildBlueIndustries
                     //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
                     remodelCost = reconfigureAmount - recycleAmount;
                 }
+                 */
             }
 
             return remodelCost;
@@ -100,29 +117,40 @@ namespace WildBlueIndustries
                 return true;
             if (!payForReconfigure)
                 return true;
-            string value;
+            //string value;
             bool canAffordCost = false;
+            string requiredName = templatesModel[templateName].GetValue("requiredResource");
+            string requiredSkill = "Engineer";
+            float materialModifier = materialCostModifier;
+
+            if (templatesModel[templateName].HasValue("requiredSkill"))
+                requiredSkill = templatesModel[templateName].GetValue("requiredSkill");
+            calculateRemodelCostModifier(requiredSkill);
 
             //If we don't have the required resource defined in the template then we can
             //automatically afford to reconfigure.
-            if (templatesModel[templateName].HasValue("rocketParts") == false)
+            if (templatesModel[templateName].HasValue("requiredAmount") == false)
             {
                 reconfigureCost = 0f;
                 return true;
             }
 
-            requriredResource = templatesModel[templateName].GetValue("rocketParts");
+            if (templatesModel[templateName].HasValue("ignoreMaterialModifier"))
+                materialModifier = 1.0f;
+
+            requriredResource = templatesModel[templateName].GetValue("requiredAmount");
             if (string.IsNullOrEmpty(requriredResource) == false)
             {
-                float reconfigureAmount = float.Parse(requriredResource);
-                double totalResources = ResourceHelper.GetTotalResourceAmount("RocketParts", this.part.vessel);
-
                 //An inflatable part that hasn't been inflated yet is an automatic pass.
                 if (isInflatable && !isDeployed)
                     return true;
 
+                reconfigureCost = float.Parse(requriredResource) * materialModifier * reconfigureCostModifier;
+                double totalResources = ResourceHelper.GetTotalResourceAmount(requiredName, this.part.vessel);
+
+                /*
                 //Get the current template's rocket part cost.
-                value = CurrentTemplate.GetValue("rocketParts");
+                value = CurrentTemplate.GetValue("requiredAmount");
                 if (string.IsNullOrEmpty(value) == false)
                 {
                     float recycleAmount = float.Parse(value) * materialCostModifier;
@@ -138,6 +166,7 @@ namespace WildBlueIndustries
                     //If we reverse the numbers so new configuration takes 1200: 1200 - (900 * .9) = 390
                     reconfigureCost = reconfigureAmount - recycleAmount;
                 }
+                 */
 
                 //now check to make sure the vessel has enough parts.
                 if (totalResources < reconfigureCost)
@@ -149,7 +178,7 @@ namespace WildBlueIndustries
 
             if (!canAffordCost)
             {
-                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, "RocketParts");
+                string notEnoughPartsMsg = string.Format(kInsufficientParts, reconfigureCost, requiredName);
                 ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 return false;
             }
@@ -168,7 +197,7 @@ namespace WildBlueIndustries
                 return true;
             bool hasAtLeastOneCrew = false;
 
-            //Tearing down the current configuration returns 70% of the current configuration's rocketParts, plus 5% per skill point
+            //Tearing down the current configuration returns 70% of the current configuration's resource, plus 5% per skill point
             //of the highest ranking kerbal in the module with the appropriate skill required to reconfigure, or 5% per skill point
             //of the kerbal on EVA if the kerbal has the required skill.
             //If anybody can reconfigure the module to the desired template, then get the highest ranking Engineer and apply his/her skill bonus.
@@ -228,7 +257,7 @@ namespace WildBlueIndustries
 
                 if (experience.TypeName == skillRequired)
                 {
-                    reconfigureCostModifier = baseSkillModifier * experience.CrewMemberExperienceLevel();
+                    reconfigureCostModifier = 1 - (baseSkillModifier * experience.CrewMemberExperienceLevel());
                     return;
                 }
             }
@@ -241,14 +270,15 @@ namespace WildBlueIndustries
                         highestLevel = protoCrew.experienceLevel;
             }
 
-            reconfigureCostModifier = baseSkillModifier * highestLevel;
+            reconfigureCostModifier = 1 - (baseSkillModifier * highestLevel);
         }
 
         protected float calculateRecycleAmount()
         {
             calculateRemodelCostModifier();
 
-            return recycleBase + reconfigureCostModifier;
+            return 0f;
+            //return recycleBase + reconfigureCostModifier;
         }
     }
 }

@@ -44,7 +44,7 @@ namespace WildBlueIndustries
         public string skillRequired;
 
         [KSPField]
-        public string resourceRequired = "RocketParts";
+        public string resourceRequired = "";
 
         [KSPField]
         public float resourceCost;
@@ -193,7 +193,7 @@ namespace WildBlueIndustries
                 return true;
             bool hasAtLeastOneCrew = false;
 
-            //Tearing down the current configuration returns 70% of the current configuration's rocketParts, plus 5% per skill point
+            //Tearing down the current configuration returns 70% of the current configuration's resource, plus 5% per skill point
             //of the highest ranking kerbal in the module with the appropriate skill required to reconfigure, or 5% per skill point
             //of the kerbal on EVA if the kerbal has the required skill.
             //If anybody can reconfigure the module to the desired template, then get the highest ranking Engineer and apply his/her skill bonus.
