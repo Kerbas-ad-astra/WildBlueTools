@@ -39,7 +39,10 @@ namespace WildBlueIndustries
 
             foreach (string folderName in folderNames)
             {
-                if (availablePart.partUrl.Contains(folderName))
+                if (availablePart.partUrl.Contains("Deprecated"))
+                    return false;
+
+                else if (availablePart.partUrl.Contains(folderName))
                     return true;
             }
             return false;

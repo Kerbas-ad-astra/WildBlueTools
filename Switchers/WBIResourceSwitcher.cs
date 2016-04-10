@@ -428,6 +428,26 @@ namespace WildBlueIndustries
             return GetModuleCost();
         }
 
+        public void RemoveAllResources()
+        {
+            List<PartResource> doomedResources = new List<PartResource>();
+            foreach (PartResource res in this.part.Resources)
+            {
+                if (_resourcesToKeep == null)
+                    doomedResources.Add(res);
+
+                else if (_resourcesToKeep.Contains(res.resourceName) == false)
+                    doomedResources.Add(res);
+            }
+
+            foreach (PartResource doomed in doomedResources)
+            {
+                DestroyImmediate(doomed);
+                this.part.Resources.list.Remove(doomed);
+            }
+            _templateResources.Clear();
+        }
+
         #endregion
 
         #region Module Overrides
@@ -1111,6 +1131,32 @@ namespace WildBlueIndustries
             {
                 this.Events["NextType"].guiActive = true;
                 this.Events["PrevType"].guiActive = true;
+            }
+        }
+
+        public void SetGUIVisible(bool isVisible)
+        {
+            Events["NextType"].active = isVisible;
+            Events["PrevType"].active = isVisible;
+            Events["DumpResources"].active = isVisible;
+            Fields["shortName"].guiActive = isVisible;
+            Fields["shortName"].guiActiveEditor = isVisible;            
+
+            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            {
+                Events["ToggleDecals"].guiActive = false;
+                Events["ToggleDecals"].guiActiveEditor = false;
+                Events["ToggleDecals"].guiActiveUnfocused = false;
+            }
+
+            else
+            {
+                Events["ToggleDecals"].guiActive = isVisible;
+                Events["ToggleDecals"].guiActiveEditor = isVisible;
+                Events["ToggleDecals"].guiActiveUnfocused = isVisible;
+
+                if (isVisible)
+                    ShowDecals(decalsVisible);
             }
         }
 
