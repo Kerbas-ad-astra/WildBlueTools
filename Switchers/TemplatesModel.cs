@@ -148,7 +148,7 @@ namespace WildBlueIndustries
 
                 foreach (UrlDir.UrlConfig config in allConfigs)
                 {
-                    if (config.parent.url.Contains("Squad") || config.parent.url.Contains("NASAmission"))
+                    if (config.parent.url.Contains("Squad"))
                         continue;
 
                     url = config.parent.url.Substring(0, config.parent.url.LastIndexOf("/"));

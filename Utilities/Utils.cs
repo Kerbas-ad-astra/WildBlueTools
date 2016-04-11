@@ -115,6 +115,53 @@ namespace WildBlueIndustries
             return value;
         }
 
+        public static bool IsModInstalled(string neededMod)
+        {
+            string modToCheck = null;
+            bool checkInverse = false;
+            bool modFound = false;
+            List<string> partTokens = new List<string>();
+
+            //Create the part tokens
+            partTokens = new List<string>();
+            string url;
+            UrlDir.UrlConfig[] allConfigs = GameDatabase.Instance.root.AllConfigs.ToArray();
+            char[] delimiters = { '/' };
+            string[] tokens;
+
+            foreach (UrlDir.UrlConfig config in allConfigs)
+            {
+                if (config.parent.url.Contains("Squad"))
+                    continue;
+
+                url = config.parent.url.Substring(0, config.parent.url.LastIndexOf("/"));
+                tokens = url.Split(delimiters);
+                foreach (string token in tokens)
+                {
+                    if (partTokens.Contains(token) == false)
+                        partTokens.Add(token);
+                }
+            }
+
+            //Now check for the required mod
+            modToCheck = neededMod;
+            if (neededMod.StartsWith("!"))
+            {
+                checkInverse = true;
+                modToCheck = neededMod.Substring(1, neededMod.Length - 1);
+            }
+
+            modFound = partTokens.Contains(modToCheck);
+            if (modFound && checkInverse == false)
+                return true;
+            else if (modFound && checkInverse)
+                return true;
+            else if (!modFound && checkInverse)
+                return false;
+            else
+                return false;
+        }
+
         #region refresh tweakable GUI
         // Code from https://github.com/Swamp-Ig/KSPAPIExtensions/blob/master/Source/Utils/KSPUtils.cs#L62
 
