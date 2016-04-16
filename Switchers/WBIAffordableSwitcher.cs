@@ -83,8 +83,6 @@ namespace WildBlueIndustries
 
             if (string.IsNullOrEmpty(requiredAmount) == false)
             {
-                Log("FRED materialModifier: " + materialModifier.ToString());
-                Log("FRED reconfigureCostModifier: " + reconfigureCostModifier.ToString());
                 remodelCost = float.Parse(requiredAmount) * materialModifier * reconfigureCostModifier;
 
                 /*

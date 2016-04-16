@@ -166,6 +166,7 @@ namespace WildBlueIndustries
             else
             {
                 Events["RepairLab"].active = false;
+                Events["StartResourceConverter"].active = true;
                 status = "";
             }
         }
@@ -308,6 +309,7 @@ namespace WildBlueIndustries
             {
                 isBroken = true;
                 Events["RepairLab"].active = true;
+                Events["RepairLab"].guiActive = true;
                 Events["StartResourceConverter"].active = false;
                 status = kNeedsRepairs;
             }

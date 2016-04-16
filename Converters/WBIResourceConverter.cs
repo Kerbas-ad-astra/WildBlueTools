@@ -167,6 +167,11 @@ namespace WildBlueIndustries
                     Events["StopConverter"].guiActive = false;
                 }
             }
+            else
+            {
+                Events["StartConverter"].guiActive = false;
+                Events["StopConverter"].guiActive = false;
+            }
 
             if (minimumSuccess == 0)
                 minimumSuccess = kminimumSuccess;
@@ -242,6 +247,13 @@ namespace WildBlueIndustries
 
         public virtual void SetGuiVisible(bool isVisible)
         {
+            Events["StartResourceConverter"].guiActive = false;
+            Events["StartResourceConverter"].guiActiveEditor = false;
+            Events["StartResourceConverter"].guiActiveUnfocused = false;
+            Events["StopResourceConverter"].guiActive = false;
+            Events["StopResourceConverter"].guiActiveEditor = false;
+            Events["StopResourceConverter"].guiActiveUnfocused = false;
+
             Fields["lastAttempt"].guiActive = isVisible;
             Fields["lastAttempt"].guiActiveEditor = isVisible;
             Fields["progress"].guiActive = isVisible;

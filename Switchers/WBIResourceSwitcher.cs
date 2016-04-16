@@ -428,6 +428,16 @@ namespace WildBlueIndustries
             return GetModuleCost();
         }
 
+        public float GetModuleCost(float defaultCost, ModifierStagingSituation sit)
+        {
+            return GetModuleCost();
+        }
+
+        public ModifierChangeWhen GetModuleCostChangeWhen()
+        {
+            return ModifierChangeWhen.CONSTANTLY;
+        }
+
         public void RemoveAllResources()
         {
             List<PartResource> doomedResources = new List<PartResource>();
