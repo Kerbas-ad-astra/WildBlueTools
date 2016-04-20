@@ -65,10 +65,10 @@ namespace WildBlueIndustries
         public void PreviewNext(string templateName)
         {
             //Get the template index associated with the template name
-            int curTemplateIndex = templatesModel.FindIndexOfTemplate(templateName);
+            int curTemplateIndex = templateManager.FindIndexOfTemplate(templateName);
 
             //Get the next available template index
-            int templateIndex = templatesModel.GetNextUsableIndex(curTemplateIndex);
+            int templateIndex = templateManager.GetNextUsableIndex(curTemplateIndex);
 
             setupStorageView(templateIndex);
         }
@@ -76,10 +76,10 @@ namespace WildBlueIndustries
         public void PreviewPrev(string templateName)
         {
             //Get the template index associated with the template name
-            int curTemplateIndex = templatesModel.FindIndexOfTemplate(templateName);
+            int curTemplateIndex = templateManager.FindIndexOfTemplate(templateName);
 
             //Get the previous available template index
-            int templateIndex = templatesModel.GetPrevUsableIndex(curTemplateIndex);
+            int templateIndex = templateManager.GetPrevUsableIndex(curTemplateIndex);
 
             setupStorageView(templateIndex);
         }
@@ -89,7 +89,7 @@ namespace WildBlueIndustries
             Log("SwitchTemplateType called.");
 
             //Can we use the index?
-            EInvalidTemplateReasons reasonCode = templatesModel.CanUseTemplate(templateName);
+            EInvalidTemplateReasons reasonCode = templateManager.CanUseTemplate(templateName);
             if (reasonCode == EInvalidTemplateReasons.TemplateIsValid)
             {
                 //If we require specific skills to perform the reconfigure, do we have sufficient skill to reconfigure it?
@@ -108,7 +108,7 @@ namespace WildBlueIndustries
 
                     //Yup, we can afford it
                     //Pay the reconfigure cost
-                    payPartsCost(templatesModel.FindIndexOfTemplate(templateName));
+                    payPartsCost(templateManager.FindIndexOfTemplate(templateName));
                 }
 
                 //Update contents
@@ -135,24 +135,24 @@ namespace WildBlueIndustries
         protected void setupStorageView(int templateIndex)
         {
             //Template count
-            storageView.templateCount = templatesModel.templateNodes.Length;
+            storageView.templateCount = templateManager.templateNodes.Length;
 
             //Template name
-            storageView.templateName = templatesModel[templateIndex].GetValue("shortName");
+            storageView.templateName = templateManager[templateIndex].GetValue("shortName");
 
             //Required resource
-            if (templatesModel[templateIndex].HasValue("requiredResource"))
-                storageView.requiredResource = templatesModel[templateIndex].GetValue("requiredResource");
+            if (templateManager[templateIndex].HasValue("requiredResource"))
+                storageView.requiredResource = templateManager[templateIndex].GetValue("requiredResource");
 
             //Resource cost
-            if (templatesModel[templateIndex].HasValue("requiredAmount"))
-                storageView.resourceCost = float.Parse(templatesModel[templateIndex].GetValue("requiredAmount"));
+            if (templateManager[templateIndex].HasValue("requiredAmount"))
+                storageView.resourceCost = float.Parse(templateManager[templateIndex].GetValue("requiredAmount"));
             else
                 storageView.resourceCost = 0f;
 
             //Required skill
-            if (templatesModel[templateIndex].HasValue("reconfigureSkill"))
-                storageView.requiredSkill = templatesModel[templateIndex].GetValue("reconfigureSkill");
+            if (templateManager[templateIndex].HasValue("reconfigureSkill"))
+                storageView.requiredSkill = templateManager[templateIndex].GetValue("reconfigureSkill");
             else
                 storageView.requiredSkill = string.Empty;
 
@@ -161,7 +161,7 @@ namespace WildBlueIndustries
 
             //Decal
             string panelName;
-            ConfigNode nodeTemplate = templatesModel[templateIndex];
+            ConfigNode nodeTemplate = templateManager[templateIndex];
 
             panelName = nodeTemplate.GetValue("logoPanel");
             if (panelName != null)
@@ -174,7 +174,7 @@ namespace WildBlueIndustries
         {
             StringBuilder moduleInfo = new StringBuilder();
             StringBuilder converterInfo = new StringBuilder();
-            ConfigNode nodeTemplate = templatesModel[templateIndex];
+            ConfigNode nodeTemplate = templateManager[templateIndex];
             string value;
             PartModule partModule;
             bool addConverterHeader = true;

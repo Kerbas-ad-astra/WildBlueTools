@@ -84,7 +84,6 @@
     <Compile Include="Utilities\TransmitHelper.cs" />
     <Compile Include="Utilities\WBIMeshToggle.cs" />
     <Compile Include="Converters\WBIMultiConverter.cs" />
-    <Compile Include="Converters\MultiConverterModel.cs" />
     <Compile Include="GUI\OpsView.cs" />
     <Compile Include="Parts\WBILight.cs" />
     <Compile Include="Switchers\WBITemplateConverter.cs" />
@@ -94,7 +93,7 @@
     <Compile Include="Utilities\WBIMeshHelper.cs" />
     <Compile Include="Switchers\WBIModuleSwitcher.cs" />
     <Compile Include="Switchers\WBIResourceSwitcher.cs" />
-    <Compile Include="Switchers\TemplatesModel.cs" />
+    <Compile Include="Switchers\TemplateManager.cs" />
     <Compile Include="GUI\WindowUtils.cs" />
     <Compile Include="Utilities\Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -109,7 +108,7 @@
     <Compile Include="Utilities\WBIParachuteHelper.cs" />
     <Compile Include="PropModules\WBIInternalButtonCabinLight.cs" />
     <Compile Include="PropModules\WBIPropStateHelper.cs" />
-    <Compile Include="Converters\WBIConvertibleStorage.cs" />
+    <Compile Include="Switchers\WBIConvertibleStorage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

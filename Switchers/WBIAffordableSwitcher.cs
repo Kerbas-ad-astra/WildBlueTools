@@ -47,11 +47,11 @@ namespace WildBlueIndustries
                 return true;
             if (reconfigureCost == 0f)
                 return true;
-            if (!templatesModel[templateIndex].HasValue("requiredResource"))
+            if (!templateManager[templateIndex].HasValue("requiredResource"))
                 return true;
 
             float remodelCost = calculateRemodelCost(templateIndex);
-            string resourceName = templatesModel[templateIndex].GetValue("requiredResource");
+            string resourceName = templateManager[templateIndex].GetValue("requiredResource");
             PartResourceDefinition definition = ResourceHelper.DefinitionForResource(resourceName);
             double partsPaid = this.part.RequestResource(definition.id, remodelCost, ResourceFlowMode.ALL_VESSEL);
 
@@ -69,16 +69,16 @@ namespace WildBlueIndustries
         protected float calculateRemodelCost(int templateIndex)
         {
             //string value;
-            string requiredAmount = templatesModel[templateIndex].GetValue("requiredAmount");
+            string requiredAmount = templateManager[templateIndex].GetValue("requiredAmount");
             float remodelCost = 0f;
             string requiredSkill = "Engineer";
             float materialModifier = materialCostModifier;
 
-            if (templatesModel[templateIndex].HasValue("requiredSkill"))
-                requiredSkill = templatesModel[templateIndex].GetValue("requiredSkill");
+            if (templateManager[templateIndex].HasValue("requiredSkill"))
+                requiredSkill = templateManager[templateIndex].GetValue("requiredSkill");
             calculateRemodelCostModifier(requiredSkill);
 
-            if (templatesModel[templateIndex].HasValue("ignoreMaterialModifier"))
+            if (templateManager[templateIndex].HasValue("ignoreMaterialModifier"))
                 materialModifier = 1.0f;
 
             if (string.IsNullOrEmpty(requiredAmount) == false)
@@ -117,26 +117,26 @@ namespace WildBlueIndustries
                 return true;
             //string value;
             bool canAffordCost = false;
-            string requiredName = templatesModel[templateName].GetValue("requiredResource");
+            string requiredName = templateManager[templateName].GetValue("requiredResource");
             string requiredSkill = "Engineer";
             float materialModifier = materialCostModifier;
 
-            if (templatesModel[templateName].HasValue("requiredSkill"))
-                requiredSkill = templatesModel[templateName].GetValue("requiredSkill");
+            if (templateManager[templateName].HasValue("requiredSkill"))
+                requiredSkill = templateManager[templateName].GetValue("requiredSkill");
             calculateRemodelCostModifier(requiredSkill);
 
             //If we don't have the required resource defined in the template then we can
             //automatically afford to reconfigure.
-            if (templatesModel[templateName].HasValue("requiredAmount") == false)
+            if (templateManager[templateName].HasValue("requiredAmount") == false)
             {
                 reconfigureCost = 0f;
                 return true;
             }
 
-            if (templatesModel[templateName].HasValue("ignoreMaterialModifier"))
+            if (templateManager[templateName].HasValue("ignoreMaterialModifier"))
                 materialModifier = 1.0f;
 
-            requriredResource = templatesModel[templateName].GetValue("requiredAmount");
+            requriredResource = templateManager[templateName].GetValue("requiredAmount");
             if (string.IsNullOrEmpty(requriredResource) == false)
             {
                 //An inflatable part that hasn't been inflated yet is an automatic pass.
@@ -190,7 +190,7 @@ namespace WildBlueIndustries
                 return true;
             if (!checkForSkill)
                 return true;
-            string skillRequired = templatesModel[templateName].GetValue("reconfigureSkill");
+            string skillRequired = templateManager[templateName].GetValue("reconfigureSkill");
             if (string.IsNullOrEmpty(skillRequired))
                 return true;
             bool hasAtLeastOneCrew = false;

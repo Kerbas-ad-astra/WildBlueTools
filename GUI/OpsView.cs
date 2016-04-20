@@ -90,6 +90,30 @@ namespace WildBlueIndustries
             }
         }
 
+        public override void SetVisible(bool newValue)
+        {
+            base.SetVisible(newValue);
+            if (newValue)
+                UpdateConverters();
+        }
+
+        public void UpdateConverters()
+        {
+            List<ModuleResourceConverter> doomedConverters = new List<ModuleResourceConverter>();
+
+            converters = this.part.FindModulesImplementing<ModuleResourceConverter>();
+
+            //Now get rid of anything that is a basic science lab
+            foreach (ModuleResourceConverter converter in converters)
+            {
+                if (converter is WBIBasicScienceLab)
+                    doomedConverters.Add(converter);
+            }
+
+            foreach (ModuleResourceConverter doomed in doomedConverters)
+                converters.Remove(doomed);
+        }
+
         public override void DrawWindow()
         {
             base.DrawWindow();

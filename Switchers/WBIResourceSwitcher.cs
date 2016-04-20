@@ -87,7 +87,7 @@ namespace WildBlueIndustries
         protected bool deflateConfirmed = false;
         protected bool dumpConfirmed = false;
         protected int originalCrewCapacity;
-        protected TemplatesModel templatesModel;
+        protected TemplateManager templateManager;
         protected Dictionary<string, ConfigNode> parameterOverrides = new Dictionary<string, ConfigNode>();
         protected Dictionary<string, double> resourceMaxAmounts = new Dictionary<string, double>();
         private List<PartResource> _templateResources = new List<PartResource>();
@@ -158,11 +158,11 @@ namespace WildBlueIndustries
                 _switchClickedOnce = false;
             }
 
-            int templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
+            int templateIndex = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
 
             if (templateIndex != -1)
             {
-                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                string shortName = templateManager[templateIndex].GetValue("shortName");
                 if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
                     payPartsCost(templateIndex);
                 else
@@ -191,11 +191,11 @@ namespace WildBlueIndustries
                 _switchClickedOnce = false;
             }
 
-            int templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
+            int templateIndex = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
 
             if (templateIndex != -1)
             {
-                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                string shortName = templateManager[templateIndex].GetValue("shortName");
                 if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
                     payPartsCost(templateIndex);
                 else
@@ -222,7 +222,7 @@ namespace WildBlueIndustries
         {
             get
             {
-                ConfigNode currentTemplate = templatesModel[CurrentTemplateIndex];
+                ConfigNode currentTemplate = templateManager[CurrentTemplateIndex];
 
                 if (currentTemplate != null)
                     return currentTemplate.GetValue("shortName");
@@ -235,13 +235,13 @@ namespace WildBlueIndustries
         {
             get
             {
-                return templatesModel[CurrentTemplateIndex];
+                return templateManager[CurrentTemplateIndex];
             }
         }
 
         public virtual void UpdateContentsAndGui(string templateName)
         {
-            int index = templatesModel.FindIndexOfTemplate(templateName);
+            int index = templateManager.FindIndexOfTemplate(templateName);
 
             UpdateContentsAndGui(index);
         }
@@ -267,7 +267,7 @@ namespace WildBlueIndustries
         public virtual void UpdateContentsAndGui(int templateIndex)
         {
             string name;
-            if (templatesModel.templateNodes == null)
+            if (templateManager.templateNodes == null)
             {
                 Log("NextModuleType templateNodes == null!");
                 return;
@@ -281,22 +281,22 @@ namespace WildBlueIndustries
             CurrentTemplateIndex = templateIndex;
 
             //Set the current template name
-            shortName = templatesModel[templateIndex].GetValue("shortName");
+            shortName = templateManager[templateIndex].GetValue("shortName");
             if (string.IsNullOrEmpty(shortName))
                 return;
 
             //Change the toggle buttons' names
-            templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
+            templateIndex = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
             if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
             {
-                name = templatesModel[templateIndex].GetValue("shortName");
+                name = templateManager[templateIndex].GetValue("shortName");
                 Events["NextType"].guiName = "Next: " + name;
             }
 
-            templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
+            templateIndex = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
             if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
             {
-                name = templatesModel[templateIndex].GetValue("shortName");
+                name = templateManager[templateIndex].GetValue("shortName");
                 Events["PrevType"].guiName = "Prev: " + name;
             }
 
@@ -316,12 +316,12 @@ namespace WildBlueIndustries
             try
             {
                 Log("RedecorateModule called. loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
-                if (templatesModel == null)
+                if (templateManager == null)
                     return;
-                if (templatesModel.templateNodes == null)
+                if (templateManager.templateNodes == null)
                     return;
 
-                ConfigNode nodeTemplate = templatesModel[CurrentTemplateIndex];
+                ConfigNode nodeTemplate = templateManager[CurrentTemplateIndex];
                 if (nodeTemplate == null)
                     return;
 
@@ -366,7 +366,7 @@ namespace WildBlueIndustries
                     updateResourcesFromTemplate(nodeTemplate);
 
                 //Hide template type buttons?
-                if (templatesModel.templateNodes.Length == 1)
+                if (templateManager.templateNodes.Length == 1)
                 {
                     Events["PrevType"].guiActiveUnfocused = false;
                     Events["PrevType"].guiActiveEditor = false;
@@ -377,7 +377,7 @@ namespace WildBlueIndustries
                     Events["NextType"].guiActive = false;
                 }
 
-                else if (templatesModel.templateNodes.Length >= 4)
+                else if (templateManager.templateNodes.Length >= 4)
                 {
                     Events["NextType"].guiActiveUnfocused = true;
                     Events["NextType"].guiActiveEditor = true;
@@ -620,8 +620,8 @@ namespace WildBlueIndustries
                 _templateTags = protoNode.GetValue("templateTags");
             }
 
-            //Create the templatesModel
-            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTags);
+            //Create the templateManager
+            templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTags);
 
             //If we have resources in our node then load them.
             if (resourceNodes != null)
@@ -1177,17 +1177,17 @@ namespace WildBlueIndustries
             string value;
 
             //Change the toggle button's name
-            index = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
+            index = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
             if (index != -1 && index != CurrentTemplateIndex)
             {
-                value = templatesModel.templateNodes[index].GetValue("shortName");
+                value = templateManager.templateNodes[index].GetValue("shortName");
                 Events["NextType"].guiName = "Next: " + value;
             }
 
-            index = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
+            index = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
             if (index != -1 && index != CurrentTemplateIndex)
             {
-                value = templatesModel.templateNodes[index].GetValue("shortName");
+                value = templateManager.templateNodes[index].GetValue("shortName");
                 Events["PrevType"].guiName = "Prev: " + value;
             }
         }
@@ -1197,12 +1197,12 @@ namespace WildBlueIndustries
             Log("initTemplates called");
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
-            if (templatesModel == null)
-                templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log));
-            templatesModel.templateNodeName = templateNodes;
-            templatesModel.templateTags = _templateTags;
+            if (templateManager == null)
+                templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log));
+            templateManager.templateNodeName = templateNodes;
+            templateManager.templateTags = _templateTags;
 
-            if (templatesModel.templateNodes == null)
+            if (templateManager.templateNodes == null)
             {
                 Log("OnStart templateNodes == null!");
                 return;
@@ -1214,15 +1214,15 @@ namespace WildBlueIndustries
                 shortName = _defaultTemplate;
 
             //Set current template index
-            CurrentTemplateIndex = templatesModel.FindIndexOfTemplate(shortName);
+            CurrentTemplateIndex = templateManager.FindIndexOfTemplate(shortName);
             if (CurrentTemplateIndex == -1)
             {
                 CurrentTemplateIndex = 0;
-                shortName = templatesModel[CurrentTemplateIndex].GetValue("shortName");
+                shortName = templateManager[CurrentTemplateIndex].GetValue("shortName");
             }
 
             //If we have only one template then hide the next/prev buttons
-            if (templatesModel.templateNodes.Count<ConfigNode>() == 1)
+            if (templateManager.templateNodes.Count<ConfigNode>() == 1)
             {
                 Events["NextType"].guiActive = false;
                 Events["NextType"].guiActiveEditor = false;
@@ -1233,7 +1233,7 @@ namespace WildBlueIndustries
                 Events["NextType"].active = true;
                 Events["PrevType"].active = true;
             }
-            else if (templatesModel.templateNodes.Count<ConfigNode>() >= 4)
+            else if (templateManager.templateNodes.Count<ConfigNode>() >= 4)
             {
                 Events["NextType"].guiActive = true;
                 Events["NextType"].guiActiveEditor = true;

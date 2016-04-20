@@ -28,7 +28,7 @@ namespace WildBlueIndustries
         NoTemplates
     }
 
-    public class TemplatesModel
+    public class TemplateManager
     {
         public Part part = null;
         public Vessel vessel = null;
@@ -79,7 +79,7 @@ namespace WildBlueIndustries
                         needs = config.GetValue("needs");
                         if (needs == null)
                             templates.Add(config);
-                        else if (TemplatesModel.CheckNeeds(needs) == EInvalidTemplateReasons.TemplateIsValid)
+                        else if (TemplateManager.CheckNeeds(needs) == EInvalidTemplateReasons.TemplateIsValid)
                             templates.Add(config);
                     }
                 }
@@ -96,7 +96,7 @@ namespace WildBlueIndustries
             }
         }
 
-        public TemplatesModel(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string templateTags = "templateTags")
+        public TemplateManager(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string templateTags = "templateTags")
         {
             this.part = part;
             this.vessel = vessel;
@@ -205,7 +205,7 @@ namespace WildBlueIndustries
             value = nodeTemplate.GetValue("needs");
             if (string.IsNullOrEmpty(value) == false)
             {
-                invalidTemplateReason = TemplatesModel.CheckNeeds(value);
+                invalidTemplateReason = TemplateManager.CheckNeeds(value);
 
                 if (invalidTemplateReason != EInvalidTemplateReasons.TemplateIsValid)
                     return invalidTemplateReason;

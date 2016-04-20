@@ -23,7 +23,6 @@ namespace WildBlueIndustries
         protected List<ConfigNode> moduleSettings = new List<ConfigNode>();
 
         private bool _showGUI = true;
-        private string _ignoreTemplateModules = "None";
 
         #region API
         public bool ShowGUI
@@ -107,10 +106,6 @@ namespace WildBlueIndustries
             value = protoNode.GetValue("showGUI");
             if (string.IsNullOrEmpty(value) == false)
                 _showGUI = bool.Parse(value);
-
-            value = protoNode.GetValue("ignoreTemplateModules");
-            if (string.IsNullOrEmpty(value) == false)
-                _ignoreTemplateModules = value;
         }
 
         #endregion
@@ -197,62 +192,6 @@ namespace WildBlueIndustries
             }
         }
 
-        protected void fixModuleIndexes()
-        {
-            PartModule module;
-            int containerIndex = -1;
-            ModuleScienceLab sciLab;
-
-                /*
-                 * Special case: ModuleScienceLab
-                 * ModuleScienceLab has a field called "containerModuleIndex"
-                 * which is the index into the part's array of PartModule objects.
-                 * When you specify a number like, say 0, then the MobileScienceLab
-                 * expects that the very first PartModule in the array of part.Modules
-                 * will be a ModuleScienceContainer. If the ModuleScienceContainer is NOT
-                 * the first element in the part.Modules array, then the part's right-click menu
-                 * will fail to work and you'll get NullReferenceException errors.
-                 * It's important to know that the part.cfg file that contains a bunch of MODULE
-                 * nodes will have its MODULE nodes loaded in the order that they appear in the file.
-                 * So if the first MODULE in the file is, say, a ModuleLight, the second is a ModuleScienceContainer,
-                 * and the third is a ModuleScienceLab, then make sure that containerModuleIndex is set to 1 (the array of PartModules is 0-based).
-                 * 
-                 * Now, with WBIModuleSwitcher, we have the added complexity of dynamically adding the ModuleScienceContainer.
-                 * We won't know what the index of the ModuleScienceContainer is at runtime until after we're done
-                 * dynamically adding the PartModules identified in the template. 
-                 * So, now we will go through all the PartModules and find the index of the ModuleScienceContainer, and then we'll go through and find the
-                 * ModuleScienceLab. If we find one, then we'll set its containerModuleIndex to the index we recorded for
-                 * the ModuleScienceContainer. This code makes the assumption that the part author added a ModuleScienceContainer to the config file and then
-                 * immediately after, added a ModuleScienceLab. It would get ugly if that wasn't the case.
-                 */
-                for (int curIndex = 0; curIndex < this.part.Modules.Count; curIndex++)
-                {
-                    //Get the module
-                    module = this.part.Modules[curIndex];
-
-                    //If we have a ModuleScienceContainer, then record its index.
-                    if (module.moduleName == "ModuleScienceContainer")
-                    {
-                        containerIndex = curIndex;
-                    }
-
-                    //If we have a MobileScienceLab and we found the container index
-                    //Then set the science lab's containerModuleIndex to the proper index value
-                    else if (module.moduleName == "ModuleScienceLab" && containerIndex != -1)
-                    {
-                        //Set the index
-                        sciLab = (ModuleScienceLab)module;
-                        sciLab.containerModuleIndex = containerIndex;
-
-                        Log("Science lab container index: " + sciLab.containerModuleIndex);
-                        Log("scilab index " + curIndex);
-
-                        //Reset the recorded index
-                        containerIndex = -1;
-                    }
-                }
-        }
-
         protected bool canLoadModule(ConfigNode node)
         {
             string value;
@@ -272,7 +211,7 @@ namespace WildBlueIndustries
             value = node.GetValue("needs");
             if (!string.IsNullOrEmpty(value))
             {
-                if (TemplatesModel.CheckNeeds(value) != EInvalidTemplateReasons.TemplateIsValid)
+                if (TemplateManager.CheckNeeds(value) != EInvalidTemplateReasons.TemplateIsValid)
                     return false;
             }
 
@@ -286,24 +225,22 @@ namespace WildBlueIndustries
             string moduleName;
             PartModule module;
 
-            try
+            moduleNodes = templateNode.GetNodes("MODULE");
+            if (moduleNodes == null)
             {
-                moduleNodes = templateNode.GetNodes("MODULE");
-                if (moduleNodes == null)
-                {
-                    Log("loadModulesFromTemplate - moduleNodes is null! Cannot proceed.");
-                    return;
-                }
+                Log("loadModulesFromTemplate - moduleNodes is null! Cannot proceed.");
+                return;
+            }
 
-                //Remove any previously added modules
-                foreach (PartModule doomed in addedPartModules)
-                {
-                    this.part.RemoveModule(doomed);
-                }
-                addedPartModules.Clear();
+            //Remove any previously added modules
+            foreach (PartModule doomed in addedPartModules)
+                this.part.RemoveModule(doomed);
+            addedPartModules.Clear();
 
-                //Add the modules
-                foreach (ConfigNode moduleNode in moduleNodes)
+            //Add the modules
+            foreach (ConfigNode moduleNode in moduleNodes)
+            {
+                try
                 {
                     moduleName = moduleNode.GetValue("name");
                     Log("Checking " + moduleName);
@@ -312,88 +249,73 @@ namespace WildBlueIndustries
                     if (canLoadModule(moduleNode) == false)
                         continue;
 
-                    //Special case: ModuleScienceLab
-                    //If we add ModuleScienceLab in the editor, even if we fix up its index for the ModuleScienceContainer,
-                    //We get an NRE. The fix below does not work in the editor, and the right-click menu will be broken.
-                    //Why? I dunno, so when in the editor we won't dynamically add the ModuleScienceLab.
-                    if ((moduleName == "ModuleScienceLab" || moduleName == "ModuleScienceContainer") && HighLogic.LoadedSceneIsEditor)
+                    //Courtesy of http://forum.kerbalspaceprogram.com/threads/27851-part-AddModule%28ConfigNode-node%29-NullReferenceException-in-PartModule-Load%28node%29-help
+                    module = this.part.AddModule(moduleName);
+                    if (module == null)
                         continue;
 
-                    //If we don't find the module on our ignore list then add it.
-                    if (_ignoreTemplateModules.Contains(moduleName) == false)
+                    //Add the module to our list
+                    addedPartModules.Add(module);
+
+                    //Now wake up the module
+                    object[] parameters = new object[] { };
+                    MethodInfo awakenMethod = typeof(PartModule).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (awakenMethod == null)
                     {
-                        //module = this.part.AddModule(moduleNode);
-
-                        //Courtesy of http://forum.kerbalspaceprogram.com/threads/27851-part-AddModule%28ConfigNode-node%29-NullReferenceException-in-PartModule-Load%28node%29-help
-                        module = this.part.AddModule(moduleName);
-                        if (module == null)
-                            continue;
-
-                        //Add the module to our list
-                        addedPartModules.Add(module);
-
-                        //Now wake up the module
-                        object[] parameters = new object[] { };
-                        MethodInfo awakenMethod = typeof(PartModule).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
-                        if (awakenMethod == null)
-                        {
-                            Log("No awaken method!");
-                            continue;
-                        }
-                        awakenMethod.Invoke(module, parameters);
-                        module.OnAwake();
-                        module.OnActive();
-                        
-                        //Load up the config
-                        loadModuleSettings(module, moduleNode, addedPartModules.Count - 1);
-                        Log("Calling module.Load");
-                        module.Load(moduleNode);
-
-                        //Start it up
-                        Log("calling module.OnStart with state: " + this.part.vessel.situation);
-                        if (HighLogic.LoadedSceneIsFlight)
-                        {
-                            switch (this.part.vessel.situation)
-                            {
-                                case Vessel.Situations.ORBITING:
-                                    module.OnStart(PartModule.StartState.Orbital);
-                                    break;
-                                case Vessel.Situations.LANDED:
-                                    module.OnStart(PartModule.StartState.Landed);
-                                    break;
-                                case Vessel.Situations.SPLASHED:
-                                    module.OnStart(PartModule.StartState.Splashed);
-                                    break;
-
-                                case Vessel.Situations.SUB_ORBITAL:
-                                    module.OnStart(PartModule.StartState.SubOrbital);
-                                    break;
-
-                                case Vessel.Situations.FLYING:
-                                    module.OnStart(PartModule.StartState.Flying);
-                                    break;
-
-                                default:
-                                    module.OnStart(PartModule.StartState.None);
-                                    break;
-                            }
-                        }
-
-                        else
-                        {
-                            module.OnStart(PartModule.StartState.None);
-                        }
-
-                        Log("Added " + moduleName);
+                        Log("No awaken method!");
+                        continue;
                     }
-                }
+                    awakenMethod.Invoke(module, parameters);
+                    module.OnAwake();
+                    module.OnActive();
 
-                fixModuleIndexes();
-            }
-            catch (Exception ex)
-            {
-                Log("loadModulesFromTemplate encountered an error: " + ex);
-            }
+                    //Load up the config
+                    loadModuleSettings(module, moduleNode, addedPartModules.Count - 1);
+                    Log("Calling module.Load");
+                    module.Load(moduleNode);
+
+                    //Start it up
+                    Log("calling module.OnStart with state: " + this.part.vessel.situation);
+                    if (HighLogic.LoadedSceneIsFlight)
+                    {
+                        switch (this.part.vessel.situation)
+                        {
+                            case Vessel.Situations.ORBITING:
+                                module.OnStart(PartModule.StartState.Orbital);
+                                break;
+                            case Vessel.Situations.LANDED:
+                                module.OnStart(PartModule.StartState.Landed);
+                                break;
+                            case Vessel.Situations.SPLASHED:
+                                module.OnStart(PartModule.StartState.Splashed);
+                                break;
+
+                            case Vessel.Situations.SUB_ORBITAL:
+                                module.OnStart(PartModule.StartState.SubOrbital);
+                                break;
+
+                            case Vessel.Situations.FLYING:
+                                module.OnStart(PartModule.StartState.Flying);
+                                break;
+
+                            default:
+                                module.OnStart(PartModule.StartState.None);
+                                break;
+                        }
+                    }
+
+                    else
+                    {
+                        module.OnStart(PartModule.StartState.None);
+                    }
+
+                    Log("Added " + moduleName);
+                }
+                catch (Exception ex)
+                {
+                    Log("loadModulesFromTemplate encountered an error: " + ex);
+                }
+            }//foreach
         }
         #endregion
     }
