@@ -135,7 +135,7 @@ namespace WildBlueIndustries
             WBIInflatablePartModule inflatable = this.part.FindModuleImplementing<WBIInflatablePartModule>();
             if (inflatable != null)
             {
-                if (inflatable.isDeployed == false)
+                if (inflatable.isDeployed == false && inflatable.isInflatable)
                 {
                     ScreenMessages.PostScreenMessage("Cannot turn on the lights until the module is inflated.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
                     return;
@@ -165,7 +165,7 @@ namespace WildBlueIndustries
             WBIInflatablePartModule inflatable = this.part.FindModuleImplementing<WBIInflatablePartModule>();
             if (inflatable != null)
             {
-                if (inflatable.isDeployed == false)
+                if (inflatable.isDeployed == false && inflatable.isInflatable)
                 {
                     ScreenMessages.PostScreenMessage("Cannot turn on the lights until the module is inflated.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
                     return;
