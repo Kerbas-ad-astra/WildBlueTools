@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -23,7 +23,7 @@ namespace WildBlueIndustries
         private const float maxSoundDistance = 5.0f;
         private const double kDefaultECRequired = 0;
 
-        public static float soundEffectVolume = 0.003f;//GameSettings.SHIP_VOLUME;
+        public static float soundEffectVolume = GameSettings.SHIP_VOLUME;//0.003f;//GameSettings.SHIP_VOLUME;
 
         [KSPField(isPersistant = true)]
         public string rcsEffectName;
@@ -81,7 +81,8 @@ namespace WildBlueIndustries
             soundClip.audio.loop = true;
 
             soundClip.audio.rolloffMode = AudioRolloffMode.Logarithmic;
-            soundClip.audio.panLevel = 1f;
+            soundClip.audio.panStereo = 1f;
+            soundClip.audio.spatialBlend = 1f;
             soundClip.audio.dopplerLevel = 0f;
 
             soundClip.audio.playOnAwake = false;
@@ -119,12 +120,14 @@ namespace WildBlueIndustries
             {
                 if (isRCSOn && rcsEnabled && soundIsPlaying == false)
                 {
+                    Debug.Log("FRED SFX ON");
                     soundClip.audio.volume = soundEffectVolume;
                     soundClip.audio.Play();
                     soundIsPlaying = true;
                 }
                 else if (isRCSOn == false || rcsEnabled == false)
                 {
+                    Debug.Log("FRED SFX OFF");
                     soundClip.audio.Stop();
                     soundIsPlaying = false;
                 }

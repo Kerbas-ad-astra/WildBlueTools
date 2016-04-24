@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -31,8 +31,12 @@ namespace WildBlueIndustries
         protected string attemptFail = "Fail";
         protected string attemptSuccess = "Success";
         protected string requiredResource = "Requires ";
+        protected string needCrew = "Missing {0} Crew";
 
         public static bool showResults = true;
+
+        [KSPField]
+        public int crewsRequired = 0;
 
         [KSPField]
         public float minimumSuccess;
@@ -68,7 +72,9 @@ namespace WildBlueIndustries
             Dictionary<string, PartResource> resourceMap = new Dictionary<string, PartResource>();
 
             foreach (PartResource res in this.part.Resources)
+            {
                 resourceMap.Add(res.resourceName, res);
+            }
 
             //If we have required resources, make sure we have them.
             if (reqList.Count > 0)
@@ -78,15 +84,21 @@ namespace WildBlueIndustries
                     //Do we have a definition?
                     definition = ResourceHelper.DefinitionForResource(resRatio.ResourceName);
                     if (definition == null)
+                    {
                         return resRatio.ResourceName;
+                    }
 
                     //Do we have the resource aboard?
                     if (resourceMap.ContainsKey(resRatio.ResourceName) == false)
+                    {
                         return resRatio.ResourceName;
+                    }
 
                     //Do we have enough?
                     if (resourceMap[resRatio.ResourceName].amount < resRatio.Ratio)
+                    {
                         return resRatio.ResourceName;
+                    }
                 }
             }
 
@@ -97,6 +109,12 @@ namespace WildBlueIndustries
         public virtual void StartConverter()
         {
             string absentResource = GetMissingResource();
+
+            //Do we have enough crew?
+            if (hasMinimumCrew() == false)
+            {
+                return;
+            }
 
             //If we have required resources, make sure we have them.
             if (!string.IsNullOrEmpty(absentResource))
@@ -149,6 +167,11 @@ namespace WildBlueIndustries
                     Events["StopConverter"].guiActive = false;
                 }
             }
+            else
+            {
+                Events["StartConverter"].guiActive = false;
+                Events["StopConverter"].guiActive = false;
+            }
 
             if (minimumSuccess == 0)
                 minimumSuccess = kminimumSuccess;
@@ -156,6 +179,9 @@ namespace WildBlueIndustries
                 criticalSuccess = kCriticalSuccess;
             if (criticalFail == 0)
                 criticalFail = kCriticalFailure;
+
+            //Check minimum crew
+            hasMinimumCrew();
         }
 
         protected override void PostProcess(ConverterResults result, double deltaTime)
@@ -178,6 +204,13 @@ namespace WildBlueIndustries
             if (hoursPerCycle == 0f)
                 return;
 
+            //Make sure we have the minimum crew
+            if (hasMinimumCrew() == false)
+            {
+                StopConverter();
+                return;
+            }
+
             //Calculate the crew skill and seconds of research per cycle.
             //Thes values can change if the player swaps out crew.
             totalCrewSkill = GetTotalCrewSkill();
@@ -190,14 +223,18 @@ namespace WildBlueIndustries
             CalculateProgress();
 
             //If we've completed our research cycle then perform the analyis.
-            int cyclesSinceLastUpdate = Mathf.RoundToInt((float)(elapsedTime / secondsPerCycle));
-            int currentCycle;
-            for (currentCycle = 0; currentCycle < cyclesSinceLastUpdate; currentCycle++)
+            float completionRatio = (float)(elapsedTime / secondsPerCycle);
+            if (completionRatio > 1.0f)
             {
-                PerformAnalysis();
+                int cyclesSinceLastUpdate = Mathf.RoundToInt(completionRatio);
+                int currentCycle;
+                for (currentCycle = 0; currentCycle < cyclesSinceLastUpdate; currentCycle++)
+                {
+                    PerformAnalysis();
 
-                //Reset start time
-                cycleStartTime = Planetarium.GetUniversalTime();
+                    //Reset start time
+                    cycleStartTime = Planetarium.GetUniversalTime();
+                }
             }
 
             //If we're missing resources then stop the converter
@@ -207,8 +244,16 @@ namespace WildBlueIndustries
                 status = result.Status;
             }
         }
+
         public virtual void SetGuiVisible(bool isVisible)
         {
+            Events["StartResourceConverter"].guiActive = false;
+            Events["StartResourceConverter"].guiActiveEditor = false;
+            Events["StartResourceConverter"].guiActiveUnfocused = false;
+            Events["StopResourceConverter"].guiActive = false;
+            Events["StopResourceConverter"].guiActiveEditor = false;
+            Events["StopResourceConverter"].guiActiveUnfocused = false;
+
             Fields["lastAttempt"].guiActive = isVisible;
             Fields["lastAttempt"].guiActiveEditor = isVisible;
             Fields["progress"].guiActive = isVisible;
@@ -309,6 +354,23 @@ namespace WildBlueIndustries
 
             //Done
             return roll;
+        }
+
+        protected virtual bool hasMinimumCrew()
+        {
+            //Do we have enough crew?
+            if (crewsRequired > 0)
+            {
+                int crewCount = this.part.protoModuleCrew.Count;
+
+                if (crewsRequired > crewCount)
+                {
+                    status = string.Format(needCrew, crewsRequired - crewCount);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         protected virtual void onCriticalFailure()

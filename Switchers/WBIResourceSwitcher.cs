@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -18,6 +18,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    public delegate void ModuleRedecoratedEvent(ConfigNode templateNode);
+    public delegate void ResourcesDumpedEvent();
+
     public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier
     {
         private static string MAIN_TEXTURE = "_MainTex";
@@ -25,6 +28,10 @@ namespace WildBlueIndustries
 
         [KSPField(isPersistant = true)]
         public int currentVolume;
+
+        //Events
+        public event ModuleRedecoratedEvent onModuleRedecorated;
+        public event ResourcesDumpedEvent onResourcesDumped;
 
         //Index of the current module template we're using.
         public int CurrentTemplateIndex;
@@ -49,7 +56,7 @@ namespace WildBlueIndustries
         private string _resourcesToKeep = "NONE";
 
         //Name of the template types allowed
-        private string _templateTypes;
+        private string _templateTags;
 
         //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
         private string _defaultTemplate;
@@ -78,7 +85,9 @@ namespace WildBlueIndustries
         protected string capacityFactorTypes;
         protected bool confirmResourceSwitch = false;
         protected bool deflateConfirmed = false;
-        protected TemplatesModel templatesModel;
+        protected bool dumpConfirmed = false;
+        protected int originalCrewCapacity;
+        protected TemplateManager templateManager;
         protected Dictionary<string, ConfigNode> parameterOverrides = new Dictionary<string, ConfigNode>();
         protected Dictionary<string, double> resourceMaxAmounts = new Dictionary<string, double>();
         private List<PartResource> _templateResources = new List<PartResource>();
@@ -87,11 +96,33 @@ namespace WildBlueIndustries
         #region Display Fields
         //We use this field to identify the template config node as well as have a GUI friendly name for the user.
         //When the module starts, we'll use the shortName to find the template and get the info we need.
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Module Type")]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Configuration")]
         public string shortName;
         #endregion
 
         #region User Events & API
+        [KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "Dump Resources", guiActiveUnfocused = true, unfocusedRange = 3.0f)]
+        public void DumpResources()
+        {
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                if (dumpConfirmed == false)
+                {
+                    ScreenMessages.PostScreenMessage("Existing resources will be removed. Click a second time to confirm resource dump.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    dumpConfirmed = true;
+                    return;
+                }
+
+                dumpConfirmed = false;
+            }
+
+            foreach (PartResource resource in this.part.Resources)
+                resource.amount = 0;
+
+            if (onResourcesDumped != null)
+                onResourcesDumped();
+        }
+
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Decals")]
         public void ToggleDecals()
         {
@@ -127,13 +158,13 @@ namespace WildBlueIndustries
                 _switchClickedOnce = false;
             }
 
-            int templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
+            int templateIndex = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
 
             if (templateIndex != -1)
             {
-                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                string shortName = templateManager[templateIndex].GetValue("shortName");
                 if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
-                    payPartsCost();
+                    payPartsCost(templateIndex);
                 else
                     return;
                 UpdateContentsAndGui(templateIndex);
@@ -160,13 +191,13 @@ namespace WildBlueIndustries
                 _switchClickedOnce = false;
             }
 
-            int templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
+            int templateIndex = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
 
             if (templateIndex != -1)
             {
-                string shortName = templatesModel[templateIndex].GetValue("shortName");
+                string shortName = templateManager[templateIndex].GetValue("shortName");
                 if (canAffordReconfigure(shortName) && hasSufficientSkill(shortName))
-                    payPartsCost();
+                    payPartsCost(templateIndex);
                 else
                     return;
                 UpdateContentsAndGui(templateIndex);
@@ -191,7 +222,7 @@ namespace WildBlueIndustries
         {
             get
             {
-                ConfigNode currentTemplate = templatesModel[CurrentTemplateIndex];
+                ConfigNode currentTemplate = templateManager[CurrentTemplateIndex];
 
                 if (currentTemplate != null)
                     return currentTemplate.GetValue("shortName");
@@ -204,13 +235,13 @@ namespace WildBlueIndustries
         {
             get
             {
-                return templatesModel[CurrentTemplateIndex];
+                return templateManager[CurrentTemplateIndex];
             }
         }
 
         public virtual void UpdateContentsAndGui(string templateName)
         {
-            int index = templatesModel.FindIndexOfTemplate(templateName);
+            int index = templateManager.FindIndexOfTemplate(templateName);
 
             UpdateContentsAndGui(index);
         }
@@ -230,15 +261,13 @@ namespace WildBlueIndustries
             }
 
             //Dirty the GUI
-            UIPartActionWindow tweakableUI = Utils.FindActionWindow(this.part);
-            if (tweakableUI != null)
-                tweakableUI.displayDirty = true;
+            MonoUtilities.RefreshContextWindows(this.part);
         }
 
         public virtual void UpdateContentsAndGui(int templateIndex)
         {
             string name;
-            if (templatesModel.templateNodes == null)
+            if (templateManager.templateNodes == null)
             {
                 Log("NextModuleType templateNodes == null!");
                 return;
@@ -252,22 +281,22 @@ namespace WildBlueIndustries
             CurrentTemplateIndex = templateIndex;
 
             //Set the current template name
-            shortName = templatesModel[templateIndex].GetValue("shortName");
+            shortName = templateManager[templateIndex].GetValue("shortName");
             if (string.IsNullOrEmpty(shortName))
                 return;
 
             //Change the toggle buttons' names
-            templateIndex = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
+            templateIndex = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
             if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
             {
-                name = templatesModel[templateIndex].GetValue("shortName");
+                name = templateManager[templateIndex].GetValue("shortName");
                 Events["NextType"].guiName = "Next: " + name;
             }
 
-            templateIndex = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
+            templateIndex = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
             if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
             {
-                name = templatesModel[templateIndex].GetValue("shortName");
+                name = templateManager[templateIndex].GetValue("shortName");
                 Events["PrevType"].guiName = "Prev: " + name;
             }
 
@@ -275,21 +304,10 @@ namespace WildBlueIndustries
             RedecorateModule();
 
             //Update the resource panel
-            if (HighLogic.LoadedSceneIsFlight && ResourceDisplay.Instance != null)
-            {
-                try
-                {
-                    ResourceDisplay.Instance.Refresh();
-                    ResourceDisplay.Instance.Update();
-                }
-                catch (Exception ex)
-                {
-                    Log("Exception while trying to update resource panel: " + ex.ToString());
-                }
-            }
+            MonoUtilities.RefreshContextWindows(this.part);
         }
 
-        public virtual void RedecorateModule(bool payForRedecoration = true, bool loadTemplateResources = true)
+        public virtual void RedecorateModule(bool loadTemplateResources = true)
         {
             double maxAmount = 0;
             string resourceName = "";
@@ -297,13 +315,13 @@ namespace WildBlueIndustries
 
             try
             {
-                Log("RedecorateModule called. payForRedecoration: " + payForRedecoration.ToString() + " loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
-                if (templatesModel == null)
+                Log("RedecorateModule called. loadTemplateResources: " + loadTemplateResources.ToString() + " template index: " + CurrentTemplateIndex);
+                if (templateManager == null)
                     return;
-                if (templatesModel.templateNodes == null)
+                if (templateManager.templateNodes == null)
                     return;
 
-                ConfigNode nodeTemplate = templatesModel[CurrentTemplateIndex];
+                ConfigNode nodeTemplate = templateManager[CurrentTemplateIndex];
                 if (nodeTemplate == null)
                     return;
 
@@ -332,6 +350,14 @@ namespace WildBlueIndustries
                     }
                 }
 
+                //Crew capacity
+                //The part itself has an inflated/deflated crew capacity, as do certain templates.
+                //Priority goes to inflated parts and their crew capacities.
+                if (!isInflatable && nodeTemplate.HasValue("CrewCapacity"))
+                    this.part.CrewCapacity = int.Parse(nodeTemplate.GetValue("CrewCapacity"));
+                else if (!isInflatable)
+                    this.part.CrewCapacity = originalCrewCapacity;
+
                 //Load the template resources into the module.
                 OnEditorAttach();
                 if (loadTemplateResources)
@@ -339,9 +365,24 @@ namespace WildBlueIndustries
                 else
                     updateResourcesFromTemplate(nodeTemplate);
 
-                //Hide previous template type button?
-                if (templatesModel.templateNodes.Length >= 4)
+                //Hide template type buttons?
+                if (templateManager.templateNodes.Length == 1)
                 {
+                    Events["PrevType"].guiActiveUnfocused = false;
+                    Events["PrevType"].guiActiveEditor = false;
+                    Events["PrevType"].guiActive = false;
+
+                    Events["NextType"].guiActiveUnfocused = false;
+                    Events["NextType"].guiActiveEditor = false;
+                    Events["NextType"].guiActive = false;
+                }
+
+                else if (templateManager.templateNodes.Length >= 4)
+                {
+                    Events["NextType"].guiActiveUnfocused = true;
+                    Events["NextType"].guiActiveEditor = true;
+                    Events["NextType"].guiActive = true;
+
                     Events["PrevType"].guiActive = true;
                     Events["PrevType"].guiActiveEditor = true;
                     Events["PrevType"].guiActiveUnfocused = true;
@@ -349,16 +390,23 @@ namespace WildBlueIndustries
 
                 else
                 {
+                    Events["NextType"].guiActiveUnfocused = true;
+                    Events["NextType"].guiActiveEditor = true;
+                    Events["NextType"].guiActive = true;
+
                     Events["PrevType"].guiActiveUnfocused = false;
                     Events["PrevType"].guiActiveEditor = false;
                     Events["PrevType"].guiActive = false;
                 }
 
                 //Call the OnRedecorateModule method to give others a chance to do stuff
-                OnRedecorateModule(nodeTemplate, payForRedecoration);
+                OnRedecorateModule(nodeTemplate);
 
                 //Finally, change the decals on the part.
                 updateDecalsFromTemplate(nodeTemplate);
+
+                if (onModuleRedecorated != null)
+                    onModuleRedecorated(nodeTemplate);
 
                 Log("Module redecorated.");
             }
@@ -378,6 +426,36 @@ namespace WildBlueIndustries
         public float GetModuleCost(float modifier)
         {
             return GetModuleCost();
+        }
+
+        public float GetModuleCost(float defaultCost, ModifierStagingSituation sit)
+        {
+            return GetModuleCost();
+        }
+
+        public ModifierChangeWhen GetModuleCostChangeWhen()
+        {
+            return ModifierChangeWhen.CONSTANTLY;
+        }
+
+        public void RemoveAllResources()
+        {
+            List<PartResource> doomedResources = new List<PartResource>();
+            foreach (PartResource res in this.part.Resources)
+            {
+                if (_resourcesToKeep == null)
+                    doomedResources.Add(res);
+
+                else if (_resourcesToKeep.Contains(res.resourceName) == false)
+                    doomedResources.Add(res);
+            }
+
+            foreach (PartResource doomed in doomedResources)
+            {
+                DestroyImmediate(doomed);
+                this.part.Resources.list.Remove(doomed);
+            }
+            _templateResources.Clear();
         }
 
         #endregion
@@ -505,7 +583,7 @@ namespace WildBlueIndustries
             return true;
         }
 
-        public virtual void OnRedecorateModule(ConfigNode nodeTemplate, bool payForRedecoration)
+        public virtual void OnRedecorateModule(ConfigNode nodeTemplate)
         {
             //Dummy method
         }
@@ -536,15 +614,14 @@ namespace WildBlueIndustries
                 protoNode = protoPartNodes[protoNodeKey];
 
                 //Name of the nodes to use as templates
-                if (string.IsNullOrEmpty(templateNodes))
-                    templateNodes = protoNode.GetValue("templateNodes");
+                templateNodes = protoNode.GetValue("templateNodes");
 
                 //Also get template types
-                _templateTypes = protoNode.GetValue("templateTypes");
+                _templateTags = protoNode.GetValue("templateTags");
             }
 
-            //Create the templatesModel
-            templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTypes);
+            //Create the templateManager
+            templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTags);
 
             //If we have resources in our node then load them.
             if (resourceNodes != null)
@@ -642,6 +719,9 @@ namespace WildBlueIndustries
             if (!HighLogic.LoadedSceneIsEditor && !HighLogic.LoadedSceneIsFlight)
                 return;
 
+            //Original crew capacity
+            originalCrewCapacity = this.part.CrewCapacity;
+
             //Initialize the templates
             initTemplates();
 
@@ -654,7 +734,7 @@ namespace WildBlueIndustries
             //When we do, we don't make the player pay for the redecoration, and we want to preserve
             //the part's existing resources, not to mention the current settings for the converters.
             //Also, if we have converters already then we've loaded their states during the OnLoad method call.
-            RedecorateModule(false, loadTemplateResources);
+            RedecorateModule(loadTemplateResources);
 
             //Init the module GUI
             initModuleGUI();
@@ -676,7 +756,7 @@ namespace WildBlueIndustries
         #region Helpers
         protected virtual void updateResourcesFromTemplate(ConfigNode nodeTemplate)
         {
-            string templateType = nodeTemplate.GetValue("templateType");
+            string templateTags = nodeTemplate.GetValue("templateTags");
             PartResource resource = null;
             string value;
             float capacityModifier = capacityFactor;
@@ -712,7 +792,7 @@ namespace WildBlueIndustries
                     resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
-                else if (capacityFactorTypes.Contains(templateType))
+                else if (capacityFactorTypes.Contains(templateTags))
                     resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
@@ -731,7 +811,7 @@ namespace WildBlueIndustries
         {
             PartResource resource = null;
             string value;
-            string templateType = nodeTemplate.GetValue("templateType");
+            string templateTags = nodeTemplate.GetValue("templateTags");
             float capacityModifier = capacityFactor;
 
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
@@ -810,7 +890,7 @@ namespace WildBlueIndustries
                     resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
-                else if (capacityFactorTypes.Contains(templateType))
+                else if (capacityFactorTypes.Contains(templateTags))
                     resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
@@ -929,8 +1009,9 @@ namespace WildBlueIndustries
                 foreach (Transform target in targets)
                 {
                     target.gameObject.SetActive(isVisible);
-                    if (target.gameObject.collider != null)
-                        target.gameObject.collider.enabled = isVisible;
+                    Collider collider = target.gameObject.GetComponent<Collider>();
+                    if (collider != null)
+                        collider.enabled = isVisible;
                 }
             }
         }
@@ -1010,7 +1091,7 @@ namespace WildBlueIndustries
                 templateNodes = protoNode.GetValue("templateNodes");
 
             //Also get template types
-            _templateTypes = protoNode.GetValue("templateTypes");
+            _templateTags = protoNode.GetValue("templateTags");
 
             //Set the defaults. We'll need them when we're in the editor
             //because the persistent KSP field seems to only apply to savegames.
@@ -1063,6 +1144,32 @@ namespace WildBlueIndustries
             }
         }
 
+        public void SetGUIVisible(bool isVisible)
+        {
+            Events["NextType"].active = isVisible;
+            Events["PrevType"].active = isVisible;
+            Events["DumpResources"].active = isVisible;
+            Fields["shortName"].guiActive = isVisible;
+            Fields["shortName"].guiActiveEditor = isVisible;            
+
+            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            {
+                Events["ToggleDecals"].guiActive = false;
+                Events["ToggleDecals"].guiActiveEditor = false;
+                Events["ToggleDecals"].guiActiveUnfocused = false;
+            }
+
+            else
+            {
+                Events["ToggleDecals"].guiActive = isVisible;
+                Events["ToggleDecals"].guiActiveEditor = isVisible;
+                Events["ToggleDecals"].guiActiveUnfocused = isVisible;
+
+                if (isVisible)
+                    ShowDecals(decalsVisible);
+            }
+        }
+
         protected virtual void initModuleGUI()
         {
             Log("initModuleGUI called");
@@ -1070,17 +1177,17 @@ namespace WildBlueIndustries
             string value;
 
             //Change the toggle button's name
-            index = templatesModel.GetNextUsableIndex(CurrentTemplateIndex);
+            index = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
             if (index != -1 && index != CurrentTemplateIndex)
             {
-                value = templatesModel.templateNodes[index].GetValue("shortName");
+                value = templateManager.templateNodes[index].GetValue("shortName");
                 Events["NextType"].guiName = "Next: " + value;
             }
 
-            index = templatesModel.GetPrevUsableIndex(CurrentTemplateIndex);
+            index = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
             if (index != -1 && index != CurrentTemplateIndex)
             {
-                value = templatesModel.templateNodes[index].GetValue("shortName");
+                value = templateManager.templateNodes[index].GetValue("shortName");
                 Events["PrevType"].guiName = "Prev: " + value;
             }
         }
@@ -1090,12 +1197,12 @@ namespace WildBlueIndustries
             Log("initTemplates called");
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
-            if (templatesModel == null)
-                templatesModel = new TemplatesModel(this.part, this.vessel, new LogDelegate(Log));
-            templatesModel.templateNodeName = templateNodes;
-            templatesModel.templateTypes = _templateTypes;
+            if (templateManager == null)
+                templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log));
+            templateManager.templateNodeName = templateNodes;
+            templateManager.templateTags = _templateTags;
 
-            if (templatesModel.templateNodes == null)
+            if (templateManager.templateNodes == null)
             {
                 Log("OnStart templateNodes == null!");
                 return;
@@ -1107,15 +1214,15 @@ namespace WildBlueIndustries
                 shortName = _defaultTemplate;
 
             //Set current template index
-            CurrentTemplateIndex = templatesModel.FindIndexOfTemplate(shortName);
+            CurrentTemplateIndex = templateManager.FindIndexOfTemplate(shortName);
             if (CurrentTemplateIndex == -1)
             {
                 CurrentTemplateIndex = 0;
-                shortName = templatesModel[CurrentTemplateIndex].GetValue("shortName");
+                shortName = templateManager[CurrentTemplateIndex].GetValue("shortName");
             }
 
             //If we have only one template then hide the next/prev buttons
-            if (templatesModel.templateNodes.Count<ConfigNode>() == 1)
+            if (templateManager.templateNodes.Count<ConfigNode>() == 1)
             {
                 Events["NextType"].guiActive = false;
                 Events["NextType"].guiActiveEditor = false;
@@ -1123,8 +1230,10 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActive = false;
                 Events["PrevType"].guiActiveEditor = false;
                 Events["PrevType"].guiActiveUnfocused = false;
+                Events["NextType"].active = true;
+                Events["PrevType"].active = true;
             }
-            else if (templatesModel.templateNodes.Count<ConfigNode>() >= 4)
+            else if (templateManager.templateNodes.Count<ConfigNode>() >= 4)
             {
                 Events["NextType"].guiActive = true;
                 Events["NextType"].guiActiveEditor = true;
@@ -1132,13 +1241,15 @@ namespace WildBlueIndustries
                 Events["PrevType"].guiActive = true;
                 Events["PrevType"].guiActiveEditor = true;
                 Events["PrevType"].guiActiveUnfocused = true;
+                Events["NextType"].active = true;
+                Events["PrevType"].active = true;
             }
 
         }
         #endregion
 
         #region ReconfigurationCosts
-        protected virtual bool payPartsCost()
+        protected virtual bool payPartsCost(int templateIndex)
         {
              return true;
         }

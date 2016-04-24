@@ -32,9 +32,20 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="KSPAssets">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\KSPAssets.dll</HintPath>
+    </Reference>
+    <Reference Include="KSPCore">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\KSPCore.dll</HintPath>
+    </Reference>
+    <Reference Include="KSPUtil">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\KSPUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -42,15 +53,28 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Program Files (x86)\Steam\SteamApps\common\Kerbal Space Program\KSP_Data\Managed\UnityEngine.dll</HintPath>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Vectrosity">
+      <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\Vectrosity.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GUI\ConvertibleStorageView.cs" />
+    <Compile Include="GUI\ScienceLabResultsView.cs" />
+    <Compile Include="Utilities\ButtonClickDelegate.cs" />
+    <Compile Include="PropModules\InternalPlasmaScreen.cs" />
+    <Compile Include="Utilities\ExternalCamera.cs" />
+    <Compile Include="GUI\ExternalCameraView.cs" />
     <Compile Include="GUI\WBIResultsDialogSwizzler.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="GUI\PlasmaScreenView.cs" />
+    <Compile Include="Parts\WBICamera.cs" />
     <Compile Include="Utilities\ExtendedPartModule.cs" />
     <Compile Include="GUI\FakeExperimentResults.cs" />
     <Compile Include="Utilities\FixedUpdateHelper.cs" />
@@ -60,7 +84,6 @@
     <Compile Include="Utilities\TransmitHelper.cs" />
     <Compile Include="Utilities\WBIMeshToggle.cs" />
     <Compile Include="Converters\WBIMultiConverter.cs" />
-    <Compile Include="Converters\MultiConverterModel.cs" />
     <Compile Include="GUI\OpsView.cs" />
     <Compile Include="Parts\WBILight.cs" />
     <Compile Include="Switchers\WBITemplateConverter.cs" />
@@ -70,7 +93,7 @@
     <Compile Include="Utilities\WBIMeshHelper.cs" />
     <Compile Include="Switchers\WBIModuleSwitcher.cs" />
     <Compile Include="Switchers\WBIResourceSwitcher.cs" />
-    <Compile Include="Switchers\TemplatesModel.cs" />
+    <Compile Include="Switchers\TemplateManager.cs" />
     <Compile Include="GUI\WindowUtils.cs" />
     <Compile Include="Utilities\Utils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -79,6 +102,13 @@
     <Compile Include="Converters\WBIResourceConverter.cs" />
     <Compile Include="Parts\WBIModuleRCS.cs" />
     <Compile Include="Parts\WBIActiveRadiatorToggle.cs" />
+    <Compile Include="Converters\WBIBasicScienceLab.cs" />
+    <Compile Include="Utilities\WBIModuleAnimateGeneric.cs" />
+    <Compile Include="Parts\WBIPlasmaTV.cs" />
+    <Compile Include="Utilities\WBIParachuteHelper.cs" />
+    <Compile Include="PropModules\WBIInternalButtonCabinLight.cs" />
+    <Compile Include="PropModules\WBIPropStateHelper.cs" />
+    <Compile Include="Switchers\WBIConvertibleStorage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

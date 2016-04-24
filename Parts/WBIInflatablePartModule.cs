@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -44,7 +44,7 @@ namespace WildBlueIndustries
         public int inflatedCrewCapacity = 0;
 
         #region User Events & API
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleInflation", active = true, externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleInflation", externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
         public virtual void ToggleInflation()
         {
             //If the module is inflatable, deployed, and has kerbals inside, then don't allow the module to be deflated.
@@ -160,6 +160,15 @@ namespace WildBlueIndustries
             }
         }
 
+/*
+        public override void OnFixedUpdate()
+        {
+            base.OnFixedUpdate();
+            this.Events["ToggleInflation"].guiActive = false;
+            this.Events["ToggleInflation"].guiActiveEditor = false;
+            this.Events["ToggleInflation"].guiActiveUnfocused = false;
+        }
+*/
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -168,9 +177,9 @@ namespace WildBlueIndustries
 
             if (string.IsNullOrEmpty(animationName))
             {
-                Events["ToggleInflation"].guiActive = false;
-                Events["ToggleInflation"].guiActiveEditor = false;
-                Events["ToggleInflation"].guiActiveUnfocused = false;
+                this.Events["ToggleInflation"].guiActive = false;
+                this.Events["ToggleInflation"].guiActiveEditor = false;
+                this.Events["ToggleInflation"].guiActiveUnfocused = false;
             }
 
             else if (flightAnimationOnly)
@@ -230,6 +239,7 @@ namespace WildBlueIndustries
             //Hide toggle button
             else
             {
+                Log("Part is not inflatable.");
                 Events["ToggleInflation"].guiActive = false;
                 Events["ToggleInflation"].guiActiveEditor = false;
                 Events["ToggleInflation"].guiActiveUnfocused = false;

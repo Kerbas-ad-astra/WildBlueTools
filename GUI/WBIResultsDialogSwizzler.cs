@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
+using KSP.UI.Screens.Flight.Dialogs;
 
 /*
 Source code copyrighgt 2015, by Michael Billard (Angel-125)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
+using KSP.UI.Screens.Flight.Dialogs;
 
 /*
 Source code copyrighgt 2015, by Michael Billard (Angel-125)
@@ -74,7 +75,8 @@ namespace WildBlueIndustries
             }
 
             //Now show the dialog
-            ExperimentResultDialogPage page = new ExperimentResultDialogPage(part, data, data.transmitValue, data.labBoost, false, "", true, hasLab, Reset, Keep, Transmit, Process);
+            ScienceLabSearch labSearch = new ScienceLabSearch(this.part.vessel, data);
+            ExperimentResultDialogPage page = new ExperimentResultDialogPage(part, data, data.transmitValue, data.labBoost, false, "", true, labSearch, Reset, Keep, Transmit, Process);
             ExperimentsResultDialog dlg = ExperimentsResultDialog.DisplayResult(page);
         }
 

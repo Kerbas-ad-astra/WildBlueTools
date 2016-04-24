@@ -31,10 +31,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using KSP.UI.Dialogs;
 
 namespace WildBlueIndustries
 {
-    public abstract class Window<T>
+    public abstract class Window<T> : MonoBehaviour
     {
         private int windowId;
         private string configNodeName;
@@ -75,21 +76,6 @@ namespace WildBlueIndustries
 
         public virtual void SetVisible(bool newValue)
         {
-            if (newValue)
-            {
-                if (!visible)
-                {
-                    RenderingManager.AddToPostDrawQueue(3, new Callback(DrawWindow));
-                }
-            }
-            else
-            {
-                if (visible)
-                {
-                    RenderingManager.RemoveFromPostDrawQueue(3, new Callback(DrawWindow));
-                }
-            }
-
             this.visible = newValue;
         }
 
@@ -147,15 +133,8 @@ namespace WildBlueIndustries
             return windowConfig;
         }
 
-        public virtual void OnGUI()
-        {
-            if (visible && windowPos.Contains(new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y)))
-                InputLockManager.SetControlLock("LockMyWindow" + windowId);
-            else
-                InputLockManager.RemoveControlLock("LockMyWindow" + windowId);
-        }
-
-        protected virtual void DrawWindow()
+        //Note: parent object needs to call DrawWindow in its OnGUI method.
+        public virtual void DrawWindow()
         {
             if (visible)
             {
@@ -257,4 +236,5 @@ namespace WildBlueIndustries
             }
         }
     }
+
 }

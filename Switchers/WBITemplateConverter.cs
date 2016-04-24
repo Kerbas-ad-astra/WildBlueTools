@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -44,13 +44,16 @@ namespace WildBlueIndustries
         public string skillRequired;
 
         [KSPField]
-        public string resourceRequired = "RocketParts";
+        public string resourceRequired = "";
 
         [KSPField]
         public float resourceCost;
 
         [KSPField(isPersistant = true)]
         public bool usePrimaryTemplate = true;
+
+        [KSPField]
+        public string techRequired = string.Empty;
 
         //Should the player pay to reconfigure the module?
         public static bool payForReconfigure = true;
@@ -63,6 +66,7 @@ namespace WildBlueIndustries
         protected float reconfigureCost;
         protected float reconfigureCostModifier;
         protected WBIResourceSwitcher switcher;
+        protected bool allowSwitch = true;
 
         public override void OnStart(StartState state)
         {
@@ -70,13 +74,15 @@ namespace WildBlueIndustries
 
             switcher = this.part.FindModuleImplementing<WBIResourceSwitcher>();
 
+            //Tech check
             updateTemplate();
         }
 
         [KSPAction("Toggle Template")]
         public virtual void ToggleTemplateAction(KSPActionParam param)
         {
-            ToggleTemplate();
+            if (allowSwitch)
+                ToggleTemplate();
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiActiveUnfocused = true, unfocusedRange = 3.0f, guiName = "Toggle Template")]
@@ -90,25 +96,39 @@ namespace WildBlueIndustries
             }
         }
 
+        protected void checkForUpgrade()
+        {
+            //If the player hasn't unlocked the upgradeTech node yet, then hide the RCS functionality.
+            if (ResearchAndDevelopment.Instance != null && !string.IsNullOrEmpty(techRequired))
+            {
+                //If the tech node hasn't been researched yet then hide the switch capability
+                if (ResearchAndDevelopment.GetTechnologyState(techRequired) != RDTech.State.Available)
+                {
+                    Events["ToggleTemplate"].active = false;
+                    allowSwitch = false;
+                }
+            }
+        }
+
         protected void updateTemplate()
         {
-            string templateType;
+            string templateNodes;
 
             if (usePrimaryTemplate)
             {
-                templateType = primaryTemplate;
+                templateNodes = primaryTemplate;
                 Events["ToggleTemplate"].guiName = secondaryTemplateGUIName;
             }
 
             else
             {
-                templateType = secondaryTemplate;
+                templateNodes = secondaryTemplate;
                 Events["ToggleTemplate"].guiName = primaryTemplateGUIName;
             }
 
-            if (switcher.templateNodes != templateType)
+            if (switcher.templateNodes != templateNodes)
             {
-                switcher.templateNodes = templateType;
+                switcher.templateNodes = templateNodes;
                 switcher.initTemplates();
                 switcher.CurrentTemplateIndex = 0;
                 switcher.ReloadTemplate();
@@ -173,7 +193,7 @@ namespace WildBlueIndustries
                 return true;
             bool hasAtLeastOneCrew = false;
 
-            //Tearing down the current configuration returns 70% of the current configuration's rocketParts, plus 5% per skill point
+            //Tearing down the current configuration returns 70% of the current configuration's resource, plus 5% per skill point
             //of the highest ranking kerbal in the module with the appropriate skill required to reconfigure, or 5% per skill point
             //of the kerbal on EVA if the kerbal has the required skill.
             //If anybody can reconfigure the module to the desired template, then get the highest ranking Engineer and apply his/her skill bonus.

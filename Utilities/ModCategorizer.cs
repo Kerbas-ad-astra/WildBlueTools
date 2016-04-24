@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
-using PartListCategories;
 using RUI.Icons.Selectable;
+using KSP.UI.Screens;
 
 /*
-Source code copyright 2015, by Michael Billard (Angel-125)
+Source code copyright 2016, by Michael Billard (Angel-125)
 License: CC BY-NC-SA 4.0
 License URL: https://creativecommons.org/licenses/by-nc-sa/4.0/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -39,7 +39,10 @@ namespace WildBlueIndustries
 
             foreach (string folderName in folderNames)
             {
-                if (availablePart.partUrl.Contains(folderName))
+                if (availablePart.partUrl.Contains("Deprecated"))
+                    return false;
+
+                else if (availablePart.partUrl.Contains(folderName))
                     return true;
             }
             return false;
@@ -62,7 +65,7 @@ namespace WildBlueIndustries
             char[] delimiters = { ',' };
             Icon categoryIcon;
             PartCategorizer.Category categoryFilter;
-            RUIToggleButtonTyped categoryButton;
+            KSP.UI.UIRadioButton categoryButton;
 
             foreach (ConfigNode configNode in nodes)
             {
@@ -92,8 +95,8 @@ namespace WildBlueIndustries
                 PartCategorizer.AddCustomSubcategoryFilter(categoryFilter, title, categoryIcon, p => modFilter.IsPartInCat(p));
 
                 categoryButton = categoryFilter.button.activeButton;
-                categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
-                categoryButton.SetTrue(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
+//                categoryButton.SetFalse(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
+//                categoryButton.SetTrue(categoryButton, RUIToggleButtonTyped.ClickType.FORCED);
             }
         }
 

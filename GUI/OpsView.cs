@@ -35,10 +35,12 @@ namespace WildBlueIndustries
         public Part part;
         public PartResourceList resources;
         public bool techResearched;
+        public bool fieldReconfigurable;
         public string nextName;
         public string prevName;
         public string previewName;
         public string cost;
+        public string requiredResource;
         public NextModule nextModuleDelegate = null;
         public PrevModule prevModuleDelegate = null;
         public NextPreviewModule nextPreviewDelegate = null;
@@ -48,10 +50,11 @@ namespace WildBlueIndustries
         public GetModuleLogo getModuleLogoDelegate = null;
         public TemplateHasOpsWindow teplateHasOpsWindowDelegate = null;
         public DrawTemplateOps drawTemplateOpsDelegate = null;
+        public int templateCount = 0;
+        public InfoView modSummary = new InfoView();
 
         private Vector2 _scrollPosConverters;
         private Vector2 _scrollPosResources;
-        private InfoView modSummary = new InfoView();
         private string moduleInfo;
         ModuleCommand commandModule;
         WBIResourceSwitcher switcher;
@@ -87,11 +90,35 @@ namespace WildBlueIndustries
             }
         }
 
-        public override void OnGUI()
+        public override void SetVisible(bool newValue)
         {
-            base.OnGUI();
+            base.SetVisible(newValue);
+            if (newValue)
+                UpdateConverters();
+        }
+
+        public void UpdateConverters()
+        {
+            List<ModuleResourceConverter> doomedConverters = new List<ModuleResourceConverter>();
+
+            converters = this.part.FindModulesImplementing<ModuleResourceConverter>();
+
+            //Now get rid of anything that is a basic science lab
+            foreach (ModuleResourceConverter converter in converters)
+            {
+                if (converter is WBIBasicScienceLab)
+                    doomedConverters.Add(converter);
+            }
+
+            foreach (ModuleResourceConverter doomed in doomedConverters)
+                converters.Remove(doomed);
+        }
+
+        public override void DrawWindow()
+        {
+            base.DrawWindow();
             if (modSummary.IsVisible())
-                modSummary.OnGUI();
+                modSummary.DrawWindow();
         }
 
         public void GetPartModules()
@@ -206,6 +233,7 @@ namespace WildBlueIndustries
         {
             GUILayout.BeginVertical(GUILayout.MaxWidth(350f));
             GUILayout.Space(4);
+            bool cncControlsRendered = false;
 
             managementTab = GUILayout.SelectionGrid(managementTab, managementTabs, tabs.Length);
             if (managementTab == 0)
@@ -226,6 +254,8 @@ namespace WildBlueIndustries
                 //Control From Here
                 if (commandModule != null)
                 {
+                    cncControlsRendered = true;
+
                     if (GUILayout.Button("Control From Here"))
                         commandModule.MakeReference();
 
@@ -235,14 +265,26 @@ namespace WildBlueIndustries
                 }
 
                 //Toggle Decals
-                if (switcher != null)
+                if (switcher != null && switcher.decalsVisible)
+                {
+                    cncControlsRendered = true;
+
                     if (GUILayout.Button("Toggle Decals"))
                         switcher.ToggleDecals();
+                }
 
                 //Toggle Lights
                 if (lightModule != null)
+                {
+                    cncControlsRendered = true;
+
                     if (GUILayout.Button("Toggle Lights"))
                         lightModule.ToggleAnimation();
+                }
+
+                //No controls?
+                if (!cncControlsRendered)
+                    GUILayout.Label("No C&C controls available");
             }
 
             GUILayout.EndVertical();
@@ -250,20 +292,41 @@ namespace WildBlueIndustries
 
         protected void drawEditorGUI()
         {
+            if (templateCount == 1)
+            {
+                GUILayout.Label("<color=yellow>There is only one template, no other options.</color>");
+                return;
+            }
+
             //Next/Prev buttons
             if (GUILayout.Button("Next: " + nextName))
                 if (nextModuleDelegate != null)
                     nextModuleDelegate();
 
-            if (GUILayout.Button("Prev: " + prevName))
-                if (prevModuleDelegate != null)
-                    prevModuleDelegate();
+            if (templateCount >= 4)
+            {
+                if (GUILayout.Button("Prev: " + prevName))
+                    if (prevModuleDelegate != null)
+                        prevModuleDelegate();
+            }
+
+            if (!fieldReconfigurable)
+                GUILayout.Label("<color=yellow>NOTE: Cannot be reconfigured after launch.</color>");
         }
 
         protected void drawPreviewGUI()
         {
             //Only allow reconfiguring of the module if it allows field reconfiguration.
-            if (techResearched == false)
+            if (fieldReconfigurable == false)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("<color=yellow>This module cannot be reconfigured in the field.</color>");
+                GUILayout.FlexibleSpace();
+                return;
+            }
+
+            //Only allow reconfiguring of the module if enough tech has been researched.
+            else if (techResearched == false)
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("<color=yellow>This module cannot be reconfigured. Research more technology.</color>");
@@ -274,7 +337,7 @@ namespace WildBlueIndustries
             string moduleInfo;
 
             GUILayout.Label("<color=white>Current Preview: " + previewName + "</color>");
-            GUILayout.Label("<color=white>Reconfiguration Cost: " + cost + " RocketParts</color>");
+            GUILayout.Label("<color=white>Reconfiguration Cost: " + cost + " " + requiredResource + "</color>");
 
             //Make sure we have something to display
             if (string.IsNullOrEmpty(previewName))
@@ -314,7 +377,6 @@ namespace WildBlueIndustries
                 if (getModuleInfoDelegate != null)
                 {
                     moduleInfo = getModuleInfoDelegate(previewName);
-                    InfoView modSummary = new InfoView();
                     Texture moduleLabel;
 
                     modSummary.ModuleInfo = moduleInfo;

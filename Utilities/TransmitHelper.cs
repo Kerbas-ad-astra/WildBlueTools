@@ -38,6 +38,7 @@ namespace WildBlueIndustries
 
         public TransmitComplete transmitCompleteDelegate = null;
         public Part part = null;
+        public bool isTransmitting;
 
         protected List<TransmitItem> transmitList = new List<TransmitItem>();
         protected FixedUpdateHelper fixedUpdateHelper;
@@ -46,6 +47,9 @@ namespace WildBlueIndustries
 
         public bool TransmitToKSC(ScienceData data)
         {
+            if (isTransmitting)
+                return true;
+
             List<ModuleDataTransmitter> transmitters = this.part.vessel.FindPartModulesImplementing<ModuleDataTransmitter>();
             List<ScienceData> dataQueue = new List<ScienceData>();
             ModuleDataTransmitter bestTransmitter = null;
@@ -75,6 +79,7 @@ namespace WildBlueIndustries
             {
                 bestTransmitter.TransmitData(dataQueue);
                 monitor_for_completion(bestTransmitter);
+                isTransmitting = true;
                 return true;
             }
             else
@@ -85,8 +90,11 @@ namespace WildBlueIndustries
             }
         }
 
-        public bool TransmitToKSC(float science, float reputation, float funds, float dataAmount = -1f)
+        public bool TransmitToKSC(float science, float reputation, float funds, float dataAmount = -1f, string experimentID = "crewReport")
         {
+            if (isTransmitting)
+                return true;
+
             float transmitSize = dataAmount;
             List<ModuleDataTransmitter> transmitters = this.part.vessel.FindPartModulesImplementing<ModuleDataTransmitter>();
             List<ScienceData> dataQueue = new List<ScienceData>();
@@ -95,11 +103,11 @@ namespace WildBlueIndustries
             if (transmitSize == -1f)
             {
                 if (science > 0f)
-                    transmitSize = science / 0.3f;
+                    transmitSize = science * 1.25f;
                 else if (reputation > 0f)
-                    transmitSize = reputation / 0.3f;
+                    transmitSize = reputation * 1.25f;
                 else
-                    transmitSize = funds / 0.3f;
+                    transmitSize = funds * 1.25f;
             }
 
             else
@@ -107,7 +115,7 @@ namespace WildBlueIndustries
                 transmitSize = dataAmount;
             }
 
-            ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment("crewReport");
+            ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment(experimentID);
             ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, ExperimentSituations.SrfLanded, FlightGlobals.GetHomeBody(), "");
             ScienceData data = new ScienceData(transmitSize, 0f, 0, subject.id, "");
 
@@ -135,6 +143,7 @@ namespace WildBlueIndustries
             {
                 bestTransmitter.TransmitData(dataQueue);
                 monitor_for_completion(bestTransmitter);
+                isTransmitting = true;
                 return true;
             }
             else
@@ -165,6 +174,7 @@ namespace WildBlueIndustries
 
             if (transmitterToMonitor.statusText.Contains("Done"))
             {
+                isTransmitting = false;
                 OnTransmitComplete();
                 monitorTransmitterStatus = false;
             }
