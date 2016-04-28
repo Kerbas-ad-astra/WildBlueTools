@@ -56,7 +56,7 @@ namespace WildBlueIndustries
         private string _resourcesToKeep = "NONE";
 
         //Name of the template types allowed
-        private string _templateTags;
+        private string _allowedTags;
 
         //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
         private string _defaultTemplate;
@@ -617,11 +617,11 @@ namespace WildBlueIndustries
                 templateNodes = protoNode.GetValue("templateNodes");
 
                 //Also get template types
-                _templateTags = protoNode.GetValue("templateTags");
+                _allowedTags = protoNode.GetValue("allowedTags");
             }
 
             //Create the templateManager
-            templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log), templateNodes, _templateTags);
+            templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log), templateNodes, _allowedTags);
 
             //If we have resources in our node then load them.
             if (resourceNodes != null)
@@ -756,7 +756,7 @@ namespace WildBlueIndustries
         #region Helpers
         protected virtual void updateResourcesFromTemplate(ConfigNode nodeTemplate)
         {
-            string templateTags = nodeTemplate.GetValue("templateTags");
+            string allowedTags = nodeTemplate.GetValue("allowedTags");
             PartResource resource = null;
             string value;
             float capacityModifier = capacityFactor;
@@ -792,7 +792,7 @@ namespace WildBlueIndustries
                     resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
-                else if (capacityFactorTypes.Contains(templateTags))
+                else if (capacityFactorTypes.Contains(allowedTags))
                     resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
@@ -811,7 +811,7 @@ namespace WildBlueIndustries
         {
             PartResource resource = null;
             string value;
-            string templateTags = nodeTemplate.GetValue("templateTags");
+            string allowedTags = nodeTemplate.GetValue("allowedTags");
             float capacityModifier = capacityFactor;
 
             Log("loadResourcesFromTemplate called for template: " + nodeTemplate.GetValue("shortName"));
@@ -890,7 +890,7 @@ namespace WildBlueIndustries
                     resource.maxAmount *= capacityModifier;
 
                 //Next, if the capacityFactorTypes contains the template type then apply the capacity factor.
-                else if (capacityFactorTypes.Contains(templateTags))
+                else if (capacityFactorTypes.Contains(allowedTags))
                     resource.maxAmount *= capacityModifier;
 
                 //If we aren't deployed then set the current and max amounts
@@ -1091,7 +1091,7 @@ namespace WildBlueIndustries
                 templateNodes = protoNode.GetValue("templateNodes");
 
             //Also get template types
-            _templateTags = protoNode.GetValue("templateTags");
+            _allowedTags = protoNode.GetValue("allowedTags");
 
             //Set the defaults. We'll need them when we're in the editor
             //because the persistent KSP field seems to only apply to savegames.
@@ -1194,13 +1194,14 @@ namespace WildBlueIndustries
         
         public void initTemplates()
         {
-            Log("initTemplates called");
+            Log("initTemplates called templateNodes: " + templateNodes + " allowedTags: " + _allowedTags);
             //Create templates object if needed.
             //This can happen when the object is cloned in the editor (On Load won't be called).
             if (templateManager == null)
                 templateManager = new TemplateManager(this.part, this.vessel, new LogDelegate(Log));
             templateManager.templateNodeName = templateNodes;
-            templateManager.templateTags = _templateTags;
+            templateManager.allowedTags = _allowedTags;
+            templateManager.FilterTemplates();
 
             if (templateManager.templateNodes == null)
             {

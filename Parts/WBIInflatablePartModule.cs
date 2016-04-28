@@ -38,6 +38,9 @@ namespace WildBlueIndustries
         [KSPField()]
         public bool isInflatable = false;
 
+        [KSPField()]
+        public string inflatableColliders;
+
         //Helper objects
         public bool animationStarted = false;
         public bool isDeployed = false;
@@ -77,11 +80,15 @@ namespace WildBlueIndustries
             if (isDeployed)
             {
                 this.part.CrewCapacity = inflatedCrewCapacity;
+                this.part.crewTransferAvailable = true;
+                this.part.SpawnIVA();
                 Events["ToggleInflation"].guiName = endEventGUIName;
             }
             else
             {
                 this.part.CrewCapacity = 0;
+                this.part.crewTransferAvailable = false;
+                this.part.DespawnIVA();
                 Events["ToggleInflation"].guiName = startEventGUIName;
 
                 //Turn off the lights if deflating the module.
@@ -92,6 +99,10 @@ namespace WildBlueIndustries
                         light.TurnOffLights();
                 }
             }
+
+            //Setup colliders and inventories
+            setupColliders();
+            setupInventories();
 
             Log("Animation toggled new gui name: " + Events["ToggleInflation"].guiName);
         }
@@ -160,20 +171,15 @@ namespace WildBlueIndustries
             }
         }
 
-/*
-        public override void OnFixedUpdate()
-        {
-            base.OnFixedUpdate();
-            this.Events["ToggleInflation"].guiActive = false;
-            this.Events["ToggleInflation"].guiActiveEditor = false;
-            this.Events["ToggleInflation"].guiActiveUnfocused = false;
-        }
-*/
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
 
             SetupAnimations();
+            setupColliders();
+            setupInventories();
+            if (isInflatable && isDeployed == false)
+                this.part.DespawnIVA();
 
             if (string.IsNullOrEmpty(animationName))
             {
@@ -188,6 +194,67 @@ namespace WildBlueIndustries
         #endregion
 
         #region Helpers
+        protected virtual void setupInventories()
+        {
+            WBIKISInventoryWrapper inventory;
+
+            //If we're in the editor then hide the seat inventories
+            //For inflatable modules that are deflated
+            foreach (PartModule partModule in this.part.Modules)
+            {
+                if (partModule.moduleName == "ModuleKISInventory")
+                {
+                    inventory = new WBIKISInventoryWrapper(partModule);
+                    if (inventory.maxVolume == WBIKISSeatInventoryConfig.maxSeatVolume)
+                    {
+                        if (isInflatable && isDeployed == false)
+                        {
+                            partModule.isEnabled = false;
+                            partModule.enabled = false;
+                        }
+
+                        else
+                        {
+                            partModule.isEnabled = true;
+                            partModule.enabled = true;
+                        }
+                    }
+                }
+            }
+
+        }
+
+        protected virtual void setupColliders()
+        {
+            if (isInflatable == false)
+                return;
+            if (string.IsNullOrEmpty(inflatableColliders))
+                return;
+
+            string[] colliders = inflatableColliders.Split(new char[] { ';' });
+
+            foreach (string collider in colliders)
+            {
+                setColliderLayer(this.part.FindModelTransform(collider));
+            }
+        }
+
+        protected virtual void setColliderLayer(Transform collider)
+        {
+            if (collider != null)
+            {
+                if (isDeployed)
+                {
+                    collider.gameObject.layer = 0;
+                }
+
+                else
+                {
+                    collider.gameObject.layer = 26;
+                }
+            }
+        }
+
         public virtual void SetupAnimations()
         {
             Log("SetupAnimations called.");

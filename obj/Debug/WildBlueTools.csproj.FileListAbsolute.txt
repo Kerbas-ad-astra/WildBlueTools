@@ -17,3 +17,5 @@ C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\UnityEngine.xml
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.dll
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.pdb
 C:\Projects\KSP\WildBlueIndustries\WildBlueTools\obj\Debug\WildBlueTools.csprojResolveAssemblyReference.cache
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\KIS.dll
+C:\Projects\KSP\WildBlueIndustries\WildBlueTools\bin\Debug\KSPDev_Utils.dll

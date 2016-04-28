@@ -26,6 +26,9 @@ namespace WildBlueIndustries
         [KSPField]
         public string screenTransform = "Screen";
 
+        [KSPField]
+        public string aspectRatio;
+
         protected PlasmaScreenView screenView = new PlasmaScreenView();
 
         [KSPEvent(guiName = "Toggle GUI", guiActive = true, guiActiveEditor = true, guiActiveUnfocused = true, unfocusedRange = 5.0f)]
@@ -34,6 +37,7 @@ namespace WildBlueIndustries
             bool isVisible = !screenView.IsVisible();
 
             screenView.part = this.part;
+            screenView.aspectRatio = this.aspectRatio;
             screenView.SetVisible(isVisible);
         }
 

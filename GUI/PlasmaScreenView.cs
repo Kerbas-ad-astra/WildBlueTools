@@ -20,10 +20,12 @@ namespace WildBlueIndustries
         public int cameraIndex;
         public bool enableRandomImages;
         public float screenSwitchTime;
+        public string aspectRatio;
 
         protected ExternalCamera externalCamera;
         protected string[] imagePaths;
-        protected string[] viewOptions = {"Screenshots", "Camera" };
+        protected string[] fileNames;
+        protected string[] viewOptions = { "Screenshots", "Camera" };
         protected int viewOptionIndex;
         protected int selectedIndex;
         protected int prevSelectedIndex = -1;
@@ -46,6 +48,12 @@ namespace WildBlueIndustries
                 screeshotFolderPath = KSPUtil.ApplicationRootPath.Replace("\\", "/") + "Screenshots/";
 
             imagePaths = Directory.GetFiles(screeshotFolderPath);
+            List<string> names = new List<string>();
+            foreach (string pictureName in imagePaths)
+            {
+                names.Add(pictureName.Replace(screeshotFolderPath, ""));
+            }
+            fileNames = names.ToArray();
 
             if (HighLogic.LoadedSceneIsFlight)
             {
@@ -79,10 +87,13 @@ namespace WildBlueIndustries
 
 //            drawCameraSelectors();
 
+            if (string.IsNullOrEmpty(aspectRatio) == false)
+                GUILayout.Label("Aspect Ratio: " + aspectRatio);
+
             enableRandomImages = GUILayout.Toggle(enableRandomImages, "Enable Random Images");
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, new GUILayoutOption[] { GUILayout.Width(375) });
             if (viewOptionIndex == 0)
-                selectedIndex = GUILayout.SelectionGrid(selectedIndex, imagePaths, 1);
+                selectedIndex = GUILayout.SelectionGrid(selectedIndex, fileNames, 1);
 //            else
 //                drawCameraControls();
 

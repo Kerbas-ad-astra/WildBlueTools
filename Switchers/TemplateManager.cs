@@ -25,7 +25,8 @@ namespace WildBlueIndustries
         TechNotUnlocked,
         InvalidIndex,
         RequiredModuleNotFound,
-        NoTemplates
+        NoTemplates,
+        TagsNotFound
     }
 
     public class TemplateManager
@@ -35,20 +36,37 @@ namespace WildBlueIndustries
         public LogDelegate logDelegate = null;
         public ConfigNode[] templateNodes;
         private string _templateNodeName;
-        private string _templateTags;
+        private string _allowedTags;
         private static List<string> partTokens;
 
         #region API
-        public string templateTags
+        public TemplateManager(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string allowedTags = null)
+        {
+            this.part = part;
+            this.vessel = vessel;
+            this.logDelegate = logDelegate;
+
+            _templateNodeName = template;
+            _allowedTags = allowedTags;
+
+            this.templateNodes = GameDatabase.Instance.GetConfigNodes(template);
+            if (templateNodes == null)
+            {
+                Log("nodeTemplatesModel templateNodes == null!");
+                return;
+            }
+        }
+
+        public string allowedTags
         {
             get
             {
-                return _templateTags;
+                return _allowedTags;
             }
 
             set
             {
-                _templateTags = value;
+                _allowedTags = value;
             }
         }
 
@@ -62,54 +80,38 @@ namespace WildBlueIndustries
             set
             {
                 _templateNodeName = value;
-                List<ConfigNode> templates = new List<ConfigNode>();
-                string[] potentialTemplates = _templateNodeName.Split(new char[] { ';' });
-                ConfigNode[] templateConfigs = GameDatabase.Instance.GetConfigNodes(_templateNodeName);
-                string needs;
-
-                foreach (string potentialTemplate in potentialTemplates)
-                {
-                    templateConfigs = GameDatabase.Instance.GetConfigNodes(potentialTemplate);
-                    if (templateConfigs == null)
-                        continue;
-
-                    //Check to see if the template needs a specific mod
-                    foreach (ConfigNode config in templateConfigs)
-                    {
-                        needs = config.GetValue("needs");
-                        if (needs == null)
-                            templates.Add(config);
-                        else if (TemplateManager.CheckNeeds(needs) == EInvalidTemplateReasons.TemplateIsValid)
-                            templates.Add(config);
-                    }
-                }
-
-                //Done
-                this.templateNodes = templates.ToArray();
-                Log(_templateNodeName + " has " + templates.Count + " templates.");
-                ConfigNode node;
-                for (int index = 0; index < this.templateNodes.Length; index++)
-                {
-                    node = this.templateNodes[index];
-                    Log("Template " + index + ": " + node.GetValue("shortName"));
-                }
             }
         }
 
-        public TemplateManager(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string templateTags = "templateTags")
+        public void FilterTemplates()
         {
-            this.part = part;
-            this.vessel = vessel;
-            this.logDelegate = logDelegate;
+            List<ConfigNode> templates = new List<ConfigNode>();
+            string[] potentialTemplates = _templateNodeName.Split(new char[] { ';' });
+            ConfigNode[] templateConfigs;
 
-            _templateNodeName = template;
-            _templateTags = templateTags;
-
-            this.templateNodes = GameDatabase.Instance.GetConfigNodes(template);
-            if (templateNodes == null)
+            foreach (string potentialTemplate in potentialTemplates)
             {
-                Log("nodeTemplatesModel templateNodes == null!");
-                return;
+                templateConfigs = GameDatabase.Instance.GetConfigNodes(potentialTemplate);
+                if (templateConfigs == null)
+                    continue;
+
+                //Find valid templates
+                foreach (ConfigNode config in templateConfigs)
+                {
+                    EInvalidTemplateReasons templateReason = CanUseTemplate(config);
+                    if (templateReason == EInvalidTemplateReasons.TemplateIsValid)
+                        templates.Add(config);
+                }
+            }
+
+            //Done
+            this.templateNodes = templates.ToArray();
+            Log(_templateNodeName + " has " + templates.Count + " templates.");
+            ConfigNode node;
+            for (int index = 0; index < this.templateNodes.Length; index++)
+            {
+                node = this.templateNodes[index];
+                Log("Template " + index + ": " + node.GetValue("shortName"));
             }
         }
 
@@ -136,23 +138,21 @@ namespace WildBlueIndustries
             string modToCheck = null;
             bool checkInverse = false;
             bool modFound = false;
+            char[] delimiters = { '/' };
+            string[] tokens;
 
             //Create the part tokens if needed
             if (partTokens == null)
             {
                 partTokens = new List<string>();
-                string url;
-                UrlDir.UrlConfig[] allConfigs = GameDatabase.Instance.root.AllConfigs.ToArray();
-                char[] delimiters = { '/' };
-                string[] tokens;
-
-                foreach (UrlDir.UrlConfig config in allConfigs)
+                foreach (AssemblyLoader.LoadedAssembly loadedAssembly in AssemblyLoader.loadedAssemblies)
                 {
-                    if (config.parent.url.Contains("Squad"))
-                        continue;
+                    //Name
+                    if (partTokens.Contains(loadedAssembly.name) == false)
+                        partTokens.Add(loadedAssembly.name);
 
-                    url = config.parent.url.Substring(0, config.parent.url.LastIndexOf("/"));
-                    tokens = url.Split(delimiters);
+                    //URL tokens
+                    tokens = loadedAssembly.url.Split(delimiters);
                     foreach (string token in tokens)
                     {
                         if (partTokens.Contains(token) == false)
@@ -223,23 +223,21 @@ namespace WildBlueIndustries
             }
 
             //If we need a specific template type then check for it.
-            value = nodeTemplate.GetValue("templateTags");
-            if (string.IsNullOrEmpty(value) == false)
+            //Only templates with the appropriate tag will be accepted.
+            if (string.IsNullOrEmpty(_allowedTags) == false)
             {
-                //if we have template types then see if the templateTags is in the list.
-                //Otherwise, we're good.
-                if (string.IsNullOrEmpty(_templateTags) == false)
-                {
-                    if (_templateTags.Contains(value) == false)
-                    {
-                        return EInvalidTemplateReasons.RequiredModuleNotFound;
-                    }
-                }
-            }
+                if (nodeTemplate.HasValue("templateTags") == false)
+                    return EInvalidTemplateReasons.TagsNotFound;
 
-            //If we're in the editor, then that's all we need to check.
-            if (HighLogic.LoadedSceneIsEditor)
-                return EInvalidTemplateReasons.TemplateIsValid;
+                value = nodeTemplate.GetValue("templateTags");
+                string[] tags = value.Split(new char[] { ';' });
+                foreach (string tag in tags)
+                {
+                    if (_allowedTags.Contains(tag))
+                        return EInvalidTemplateReasons.TemplateIsValid;
+                }
+                return EInvalidTemplateReasons.TagsNotFound;
+            }
 
             return EInvalidTemplateReasons.TemplateIsValid;
         }
