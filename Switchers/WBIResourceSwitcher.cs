@@ -354,9 +354,17 @@ namespace WildBlueIndustries
                 //The part itself has an inflated/deflated crew capacity, as do certain templates.
                 //Priority goes to inflated parts and their crew capacities.
                 if (!isInflatable && nodeTemplate.HasValue("CrewCapacity"))
+                {
                     this.part.CrewCapacity = int.Parse(nodeTemplate.GetValue("CrewCapacity"));
+                    if (this.part.CrewCapacity == 0 && originalCrewCapacity > 0 && HighLogic.LoadedSceneIsFlight)
+                        this.part.DespawnIVA();
+                }
                 else if (!isInflatable)
+                {
                     this.part.CrewCapacity = originalCrewCapacity;
+                    if (this.part.CrewCapacity > 0 && HighLogic.LoadedSceneIsFlight)
+                        this.part.SpawnIVA();
+                }
 
                 //Load the template resources into the module.
                 OnEditorAttach();
