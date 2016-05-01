@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Buffalo", "..\Buffalo\Buffa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperKerbal", "..\SuperKerbal\SuperKerbal\SuperKerbal.csproj", "{90745AD6-4DFB-46C4-BFAF-1A26F6486722}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snacks", "..\..\Snacks\Snacks\Snacks\Snacks.csproj", "{3463BA25-163C-4A80-B246-9E807ADABF0B}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,10 +43,6 @@ Global
 		{90745AD6-4DFB-46C4-BFAF-1A26F6486722}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90745AD6-4DFB-46C4-BFAF-1A26F6486722}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90745AD6-4DFB-46C4-BFAF-1A26F6486722}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3463BA25-163C-4A80-B246-9E807ADABF0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3463BA25-163C-4A80-B246-9E807ADABF0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3463BA25-163C-4A80-B246-9E807ADABF0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3463BA25-163C-4A80-B246-9E807ADABF0B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
