@@ -38,9 +38,6 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="KIS">
-      <HintPath>..\..\..\..\KSPDev\GameData\KIS\Plugins\KIS.dll</HintPath>
-    </Reference>
     <Reference Include="KSPAssets">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\KSPAssets.dll</HintPath>
     </Reference>
@@ -106,7 +103,7 @@
     <Compile Include="Converters\WBIResourceConverter.cs" />
     <Compile Include="Parts\WBIModuleRCS.cs" />
     <Compile Include="Parts\WBIActiveRadiatorToggle.cs" />
-    <Compile Include="Converters\WBIBasicScienceLab.cs" />
+    <Compile Include="Science\WBIBasicScienceLab.cs" />
     <Compile Include="Utilities\WBIModuleAnimateGeneric.cs" />
     <Compile Include="Parts\WBIPlasmaTV.cs" />
     <Compile Include="Utilities\WBIParachuteHelper.cs" />
@@ -115,6 +112,8 @@
     <Compile Include="Switchers\WBIConvertibleStorage.cs" />
     <Compile Include="Utilities\WBIKISSeatInventoryConfig.cs" />
     <Compile Include="Utilities\WBISeatInventoryHelper.CS" />
+    <Compile Include="WBIExperimentLab.cs" />
+    <Compile Include="WBIModuleScienceExperiment.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

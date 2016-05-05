@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace WildBlueIndustries
 {
     [KSPAddon(KSPAddon.Startup.SpaceCentre, true)]
-    class WBIKISSeatInventoryConfig : MonoBehaviour
+    public class WBIKISSeatInventoryConfig : MonoBehaviour
     {
         public static float maxSeatVolume = 300.0f;
 
