@@ -205,6 +205,9 @@ namespace WildBlueIndustries
 
         public virtual void PlayAnimation(bool playInReverse = false)
         {
+            if (string.IsNullOrEmpty(animationName))
+                return;
+
             float animationSpeed = playInReverse == false ? 1.0f : -1.0f;
             Animation anim = this.part.FindModelAnimators(animationName)[0];
 

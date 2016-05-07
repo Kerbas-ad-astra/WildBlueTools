@@ -66,6 +66,7 @@
   <ItemGroup>
     <Compile Include="GUI\ConvertibleStorageView.cs" />
     <Compile Include="GUI\ScienceLabResultsView.cs" />
+    <Compile Include="Utilities\WBIKISInventoryWrapper.cs" />
     <Compile Include="Utilities\ButtonClickDelegate.cs" />
     <Compile Include="PropModules\InternalPlasmaScreen.cs" />
     <Compile Include="Utilities\ExternalCamera.cs" />
@@ -102,13 +103,17 @@
     <Compile Include="Converters\WBIResourceConverter.cs" />
     <Compile Include="Parts\WBIModuleRCS.cs" />
     <Compile Include="Parts\WBIActiveRadiatorToggle.cs" />
-    <Compile Include="Converters\WBIBasicScienceLab.cs" />
+    <Compile Include="Science\WBIBasicScienceLab.cs" />
     <Compile Include="Utilities\WBIModuleAnimateGeneric.cs" />
     <Compile Include="Parts\WBIPlasmaTV.cs" />
     <Compile Include="Utilities\WBIParachuteHelper.cs" />
     <Compile Include="PropModules\WBIInternalButtonCabinLight.cs" />
     <Compile Include="PropModules\WBIPropStateHelper.cs" />
     <Compile Include="Switchers\WBIConvertibleStorage.cs" />
+    <Compile Include="Utilities\WBIKISSeatInventoryConfig.cs" />
+    <Compile Include="Utilities\WBISeatInventoryHelper.CS" />
+    <Compile Include="WBIExperimentLab.cs" />
+    <Compile Include="WBIModuleScienceExperiment.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -22,6 +22,9 @@ namespace WildBlueIndustries
     {
         protected const int kDefaultLightAnimationLayer = 3;
 
+        [KSPField]
+        public string colorPanelName;
+
         [KSPField(isPersistant = true)]
         public double ecRequired;
 
@@ -178,11 +181,13 @@ namespace WildBlueIndustries
 
         protected void setupLights()
         {
+            Transform[] targets;
+            Renderer rendererMaterial;
             if (lights == null)
                 return;
             if (lights.Length == 0)
                 return;
-            Color color = new Color(red, green, blue);
+            Color color = new Color(red, green, blue, intensity * level);
 
             foreach (Light light in lights)
             {
@@ -199,6 +204,32 @@ namespace WildBlueIndustries
             prevGreen = green;
             prevBlue = blue;
             prevLevel = level;
+
+            //If we have a color panel then change its color
+            if (string.IsNullOrEmpty(colorPanelName))
+                return;
+
+            //Get the renderers
+            Renderer[] renderers = this.part.FindModelComponents<Renderer>();
+            if (string.IsNullOrEmpty(colorPanelName))
+                return;
+
+            //Set up the panel color if the light is on.
+            if (isDeployed == false)
+                return;
+
+            //Get the target transforms
+            targets = this.part.FindModelTransforms(colorPanelName);
+            if (targets == null)
+                return;
+
+            //Now set the emissive color
+            foreach (Transform target in targets)
+            {
+                rendererMaterial = target.GetComponent<Renderer>();
+                rendererMaterial.material.SetColor("_EmissiveColor", color);
+            }
+
         }
 
     }

@@ -120,14 +120,12 @@ namespace WildBlueIndustries
             {
                 if (isRCSOn && rcsEnabled && soundIsPlaying == false)
                 {
-                    Debug.Log("FRED SFX ON");
                     soundClip.audio.volume = soundEffectVolume;
                     soundClip.audio.Play();
                     soundIsPlaying = true;
                 }
                 else if (isRCSOn == false || rcsEnabled == false)
                 {
-                    Debug.Log("FRED SFX OFF");
                     soundClip.audio.Stop();
                     soundIsPlaying = false;
                 }
