@@ -64,6 +64,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Science\LoadExperimentView.cs" />
+    <Compile Include="Science\ExpManifestAdminView.cs" />
     <Compile Include="GUI\ConvertibleStorageView.cs" />
     <Compile Include="GUI\ScienceLabResultsView.cs" />
     <Compile Include="Utilities\WBIKISInventoryWrapper.cs" />
@@ -112,8 +114,9 @@
     <Compile Include="Switchers\WBIConvertibleStorage.cs" />
     <Compile Include="Utilities\WBIKISSeatInventoryConfig.cs" />
     <Compile Include="Utilities\WBISeatInventoryHelper.CS" />
-    <Compile Include="WBIExperimentLab.cs" />
-    <Compile Include="WBIModuleScienceExperiment.cs" />
+    <Compile Include="Science\WBIExperimentLab.cs" />
+    <Compile Include="Science\WBIModuleScienceExperiment.cs" />
+    <Compile Include="Science\WBIExperimentManifest.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

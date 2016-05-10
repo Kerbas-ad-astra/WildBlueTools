@@ -21,7 +21,7 @@ namespace WildBlueIndustries
     public delegate void ModuleRedecoratedEvent(ConfigNode templateNode);
     public delegate void ResourcesDumpedEvent();
 
-    public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier
+    public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier, IPartMassModifier
     {
         private static string MAIN_TEXTURE = "_MainTex";
         private static string EMISSIVE_TEXTURE = "_Emissive";
@@ -79,6 +79,9 @@ namespace WildBlueIndustries
         //applies to the container.
         [KSPField(isPersistant = true)]
         public float capacityFactor = 0f;
+
+        [KSPField(isPersistant = true)]
+        public float partMass = 0f;
 
         //Helper objects
         protected string techRequiredToReconfigure;
@@ -328,6 +331,9 @@ namespace WildBlueIndustries
                 if (nodeTemplate.HasValue("capacityFactor"))
                     capacityModifier = float.Parse(nodeTemplate.GetValue("capacityFactor"));
 
+                if (nodeTemplate.HasValue("mass"))
+                    partMass = float.Parse(nodeTemplate.GetValue("mass"));
+
                 //Get max resource amounts if the part is inflatable.
                 if (isInflatable)
                 {
@@ -436,7 +442,7 @@ namespace WildBlueIndustries
             return GetModuleCost();
         }
 
-        public float GetModuleCost(float defaultCost, ModifierStagingSituation sit)
+        public virtual float GetModuleCost(float defaultCost, ModifierStagingSituation sit)
         {
             return GetModuleCost();
         }
@@ -1272,6 +1278,28 @@ namespace WildBlueIndustries
         {
             return true;
         }        
+        #endregion
+
+        #region IPartMassModifier
+        public virtual float CalculatePartMass(float defaultMass, float currentPartMass)
+        {
+            if (partMass > 0.001f && isInflatable == false)
+                return partMass;
+            else if (partMass > 0.001f && isInflatable && isDeployed)
+                return partMass;
+            else
+                return defaultMass;
+        }
+
+        public float GetModuleMass(float defaultMass, ModifierStagingSituation sit)
+        {
+            return CalculatePartMass(defaultMass, partMass);
+        }
+
+        public ModifierChangeWhen GetModuleMassChangeWhen()
+        {
+            return ModifierChangeWhen.CONSTANTLY;
+        }
         #endregion
     }
 }

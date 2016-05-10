@@ -76,7 +76,14 @@ namespace WildBlueIndustries
 
                 //Tell the module to save its data
                 saveNode.name = "WBIMODULE";
-                addedModule.Save(saveNode);
+                try
+                {
+                    addedModule.Save(saveNode);
+                }
+                catch (Exception ex)
+                {
+                    string exInfo = ex.ToString();
+                }
 
                 //Add it to our node
                 node.AddNode(saveNode);

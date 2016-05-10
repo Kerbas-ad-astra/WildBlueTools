@@ -197,7 +197,7 @@ namespace WildBlueIndustries
 
         #region Helpers
 
-        protected void OnGUI()
+        protected virtual void OnGUI()
         {
             try
             {
