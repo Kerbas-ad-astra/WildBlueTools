@@ -22,26 +22,20 @@ namespace WildBlueIndustries
     {
         protected const int kDefaultAnimationLayer = 2;
 
-        [KSPField(isPersistant = true)]
+        [KSPField()]
         public int animationLayer = kDefaultAnimationLayer;
 
-        [KSPField(isPersistant = true)]
+        [KSPField()]
         public string animationName;
 
-        [KSPField(isPersistant = true)]
+        [KSPField()]
         public string startEventGUIName;
 
-        [KSPField(isPersistant = true)]
+        [KSPField()]
         public string endEventGUIName;
 
         [KSPField(isPersistant = true)]
-        public string actionGUIName;
-
-        [KSPField(isPersistant = true)]
         public bool guiIsVisible = true;
-
-        [KSPField(isPersistant = true)]
-        public string actionGroup = "";
 
         //Helper objects
         public bool isDeployed = false;
@@ -98,11 +92,6 @@ namespace WildBlueIndustries
         #endregion
 
         #region Overrides
-        public override void OnUpdate()
-        {
-            base.OnUpdate();
-        }
-
         public override void OnLoad(ConfigNode node)
         {
             string value;
@@ -146,8 +135,6 @@ namespace WildBlueIndustries
             endEventGUIName = protoNode.GetValue("endEventGUIName");
 
             startEventGUIName = protoNode.GetValue("startEventGUIName");
-
-            actionGUIName = protoNode.GetValue("actionGUIName");
         }
 
         #endregion
@@ -180,11 +167,6 @@ namespace WildBlueIndustries
             //Set toggle button
             Events["ToggleAnimation"].guiActive = guiIsVisible;
             Events["ToggleAnimation"].guiActiveEditor = guiIsVisible;
-            Actions["ToggleAnimationAction"].guiName = actionGUIName;
-
-            //Set action
-//            if (string.IsNullOrEmpty(actionGroup) == false)
-//                Actions["ToggleAnimationAction"].actionGroup = (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), actionGroup);
 
             if (isDeployed)
             {

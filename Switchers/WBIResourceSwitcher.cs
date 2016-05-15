@@ -1158,7 +1158,7 @@ namespace WildBlueIndustries
             }
         }
 
-        public void SetGUIVisible(bool isVisible)
+        public virtual void SetGUIVisible(bool isVisible)
         {
             Events["NextType"].active = isVisible;
             Events["PrevType"].active = isVisible;

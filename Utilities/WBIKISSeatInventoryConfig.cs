@@ -57,16 +57,27 @@ namespace WildBlueIndustries
                 {
                     if (partModule.moduleName == "ModuleKISInventory")
                     {
-                        inventory = new WBIKISInventoryWrapper(partModule);
-                        if (inventory.maxVolume == maxSeatVolume)
+                        try
                         {
-                            inventory.podSeat = seatIndex;
-                            inventory.invType = WBIKISInventoryWrapper.InventoryType.Pod;
-                            seatIndex += 1;
+                            inventory = new WBIKISInventoryWrapper(partModule);
+                            if (inventory.maxVolume <= 0.001f)
+                            {
+                                inventory.maxVolume = maxSeatVolume;
+                                inventory.podSeat = seatIndex;
+                                inventory.invType = WBIKISInventoryWrapper.InventoryType.Pod;
+                                seatIndex += 1;
+                            }
+                        }
+
+                        catch (Exception ex)
+                        {
+                            Debug.Log("WBIKISSeatInventoryConfig encountered an error while setting up a seat inventory: " + ex.Message);
+                            continue;
                         }
                     }
                 }
             }
+
         }
     }
 

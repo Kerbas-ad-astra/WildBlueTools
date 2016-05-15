@@ -278,13 +278,17 @@ namespace WildBlueIndustries
 
                     //Load up the config
                     loadModuleSettings(module, moduleNode, addedPartModules.Count - 1);
-                    Log("Calling module.Load");
-                    module.Load(moduleNode);
-
-                    //Start it up
-                    Log("calling module.OnStart with state: " + this.part.vessel.situation);
                     if (HighLogic.LoadedSceneIsFlight)
                     {
+                        Log("Calling module.Load");
+                        module.Load(moduleNode);
+                    }
+
+                    //Start it up
+                    if (HighLogic.LoadedSceneIsFlight)
+                    {
+                        Log("calling module.OnStart with state: " + this.part.vessel.situation);
+
                         switch (this.part.vessel.situation)
                         {
                             case Vessel.Situations.ORBITING:
@@ -320,7 +324,8 @@ namespace WildBlueIndustries
                 }
                 catch (Exception ex)
                 {
-                    Log("loadModulesFromTemplate encountered an error: " + ex);
+                    Log("loadModulesFromTemplate encountered an error: " + ex + ". Moving on to next PartModule");
+                    continue;
                 }
             }//foreach
         }

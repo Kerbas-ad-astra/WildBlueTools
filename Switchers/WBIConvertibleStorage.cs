@@ -30,6 +30,20 @@ namespace WildBlueIndustries
             storageView.ToggleVisible();
         }
 
+        public override void SetGUIVisible(bool isVisible)
+        {
+            base.SetGUIVisible(isVisible);
+
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                this.Events["NextType"].guiActive = false;
+                this.Events["PrevType"].guiActive = false;
+            }
+
+            Events["ReconfigureStorage"].guiActive = isVisible;
+            Events["ReconfigureStorage"].guiActiveUnfocused = isVisible;
+        }
+
         protected override void initModuleGUI()
         {
             base.initModuleGUI();
