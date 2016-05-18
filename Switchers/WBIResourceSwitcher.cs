@@ -29,37 +29,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public int currentVolume;
 
-        //Events
-        public event ModuleRedecoratedEvent onModuleRedecorated;
-        public event ResourcesDumpedEvent onResourcesDumped;
-
-        //Index of the current module template we're using.
-        public int CurrentTemplateIndex;
-
-        //Determines whether or not the resource container can be reconfigured in the field.
-        public bool fieldReconfigurable = false;
-
-        //Decal names (these are the names of the graphics assets, including file path)
-        protected string logoPanelName;
-        protected string glowPanelName;
-
         //Name of the template nodes.
         [KSPField(isPersistant = true)]
-        public string templateNodes;
-
-        //Name of the transform(s) for the colony decal.
-        //These names come from the model itself.
-        private string _logoPanelTransforms;
-
-        //List of resources that we must keep when performing a template switch.
-        //If set to NONE, then all of the part's resources will be cleared.
-        private string _resourcesToKeep = "NONE";
-
-        //Name of the template types allowed
-        private string _allowedTags;
-
-        //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
-        private string _defaultTemplate;
+        public string templateNodes = string.Empty;
 
         //Base amount of volume the part stores, if any.
         [KSPField(isPersistant = true)]
@@ -80,8 +52,36 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public float capacityFactor = 0f;
 
+        //Events
+        public event ModuleRedecoratedEvent onModuleRedecorated;
+        public event ResourcesDumpedEvent onResourcesDumped;
+
         [KSPField(isPersistant = true)]
         public float partMass = 0f;
+
+        //Index of the current module template we're using.
+        public int CurrentTemplateIndex;
+
+        //Determines whether or not the resource container can be reconfigured in the field.
+        public bool fieldReconfigurable = false;
+
+        //Decal names (these are the names of the graphics assets, including file path)
+        protected string logoPanelName;
+        protected string glowPanelName;
+
+        //Name of the transform(s) for the colony decal.
+        //These names come from the model itself.
+        private string _logoPanelTransforms;
+
+        //List of resources that we must keep when performing a template switch.
+        //If set to NONE, then all of the part's resources will be cleared.
+        private string _resourcesToKeep = "NONE";
+
+        //Name of the template types allowed
+        private string _allowedTags;
+
+        //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
+        private string _defaultTemplate;
 
         //Helper objects
         protected string techRequiredToReconfigure;

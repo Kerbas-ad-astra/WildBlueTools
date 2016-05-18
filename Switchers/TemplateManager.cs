@@ -111,7 +111,7 @@ namespace WildBlueIndustries
             for (int index = 0; index < this.templateNodes.Length; index++)
             {
                 node = this.templateNodes[index];
-                Log("Template " + index + ": " + node.GetValue("shortName"));
+                Log("Template " + index + ": " + node.GetValue("shortName") + ", " + node.GetValue("name"));
             }
         }
 

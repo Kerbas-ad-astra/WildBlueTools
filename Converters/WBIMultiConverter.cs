@@ -30,6 +30,12 @@ namespace WildBlueIndustries
 
     public class WBIMultiConverter : WBIAffordableSwitcher
     {
+        [KSPField]
+        public float productivity = 1.0f;
+
+        [KSPField]
+        public float efficiency = 1.0f;
+
         //Helper objects
         protected ITemplateOps templateOps;
         protected OpsView moduleOpsView = new OpsView();
@@ -462,10 +468,28 @@ namespace WildBlueIndustries
                 moduleOpsView.prevName = "none available";
             }
 
+            //Update productivity and efficiency
+            updateProductivity();
+
             if (moduleOpsView.IsVisible())
             {
                 moduleOpsView.UpdateConverters();
                 moduleOpsView.resources = this.part.Resources;
+            }
+        }
+
+        protected virtual void updateProductivity()
+        {
+            //Find all the resource converters and set their productivity
+            List<ModuleResourceConverter> converters = this.part.FindModulesImplementing<ModuleResourceConverter>();
+
+            foreach (ModuleResourceConverter converter in converters)
+            {
+                converter.Efficiency = efficiency;
+
+                //Now adjust the output.
+                foreach (ResourceRatio ratio in converter.outputList)
+                    ratio.Ratio *= productivity;
             }
         }
 

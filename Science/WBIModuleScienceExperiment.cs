@@ -31,16 +31,16 @@ namespace WildBlueIndustries
     public class WBIModuleScienceExperiment : ModuleScienceExperiment
     {
         [KSPField(isPersistant = true)]
-        public string overrideExperimentID;
+        public string overrideExperimentID = string.Empty;
 
         [KSPField]
-        public string requiredParts;
+        public string requiredParts = string.Empty;
 
         [KSPField]
         public int minCrew;
 
         [KSPField]
-        public string celestialBodies;
+        public string celestialBodies = string.Empty;
 
         [KSPField]
         public double minAltitude;
@@ -49,25 +49,25 @@ namespace WildBlueIndustries
         public double maxAltitude;
 
         [KSPField]
-        public string requiredResources;
+        public string requiredResources = string.Empty;
 
         [KSPField]
-        public string situations;
+        public string situations = string.Empty;
 
         [KSPField]
         public float partMass;
 
         [KSPField]
-        public string description;
+        public string description = string.Empty;
 
         [KSPField]
         public string defaultExperiment = "WBIEmptyExperiment";
 
         [KSPField]
-        public string techRequired;
+        public string techRequired = string.Empty;
 
         [KSPField]
-        public string title;
+        public string title = string.Empty;
 
         [KSPField]
         public float cost;
@@ -76,7 +76,7 @@ namespace WildBlueIndustries
         public float chanceOfSuccess;
 
         [KSPField(isPersistant = true)]
-        public string status;
+        public string status = string.Empty;
 
         [KSPField(isPersistant = true)]
         public bool isGUIVisible;
@@ -111,7 +111,8 @@ namespace WildBlueIndustries
 
         public override void OnStart(StartState state)
         {
-            base.OnStart(state);
+            if (HighLogic.LoadedSceneIsFlight)
+                base.OnStart(state);
             SetGUIVisible(isGUIVisible);
 
             //Required resources
@@ -528,6 +529,9 @@ namespace WildBlueIndustries
 
         protected void rebuildResourceMap()
         {
+            if (string.IsNullOrEmpty(requiredResources))
+                return;
+
             //Build resource map
             string[] resources = requiredResources.Split(new char[] { ';' });
             string[] resourceAmount = null;
