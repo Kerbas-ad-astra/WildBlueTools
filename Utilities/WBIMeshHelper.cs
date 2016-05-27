@@ -28,8 +28,8 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public int selectedObject = 0;
 
-        [KSPField(isPersistant = true)]
-        public string guiNames;
+        [KSPField()]
+        public string guiNames = string.Empty;
 
         protected List<List<Transform>> objectTransforms = new List<List<Transform>>();
         protected Dictionary<string, int> meshIndexes = new Dictionary<string, int>();
