@@ -18,8 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public delegate void PreviewNextStorage(string templateName);
-    public delegate void PreviewPrevStorage(string templateName);
+    public delegate void PreviewTemplate(string templateName);
     public delegate void SetTemplate(string template);
 
     public class ConvertibleStorageView : Window<ConvertibleStorageView>
@@ -31,13 +30,15 @@ namespace WildBlueIndustries
         public string templateName;
         public int templateCount;
         public string requiredSkill = string.Empty;
+        public ConfigNode[] templates;
 
-        public PreviewNextStorage previewNext;
-        public PreviewPrevStorage previewPrev;
+        public PreviewTemplate previewTemplate;
         public SetTemplate setTemplate;
 
         private Vector2 _scrollPos;
+        private Vector2 _scrollPosTemplates;
         private bool confirmReconfigure;
+        private GUILayoutOption[] buttonOption = new GUILayoutOption[] { GUILayout.Width(48), GUILayout.Height(48) };
 
         public ConvertibleStorageView() :
         base("Configure Storage", 640, 480)
@@ -53,39 +54,59 @@ namespace WildBlueIndustries
 
         protected override void DrawWindowContents(int windowId)
         {
+            string buttonLabel;
+            string panelName;
+            Texture buttonDecal;
+
             GUILayout.BeginHorizontal();
 
             GUILayout.BeginVertical();
 
-            GUILayout.Label("Configuration: " + templateName);
+            GUILayout.Label("<color=white>Configuration: " + templateName + "</color>");
 
             if (string.IsNullOrEmpty(requiredResource) == false && resourceCost != 0f)
-                GUILayout.Label(string.Format("Cost: {0:s} ({1:f2})", requiredResource, resourceCost));
+                GUILayout.Label(string.Format("<color=white>Cost: {0:s} ({1:f2})</color>", requiredResource, resourceCost));
             else
-                GUILayout.Label("Cost: NONE");
+                GUILayout.Label("<color=white>Cost: NONE</color>");
 
             if (string.IsNullOrEmpty(requiredSkill) == false)
-                GUILayout.Label("Reconfigure Skill: " + requiredSkill);
+                GUILayout.Label("<color=white>Reconfigure Skill: " + requiredSkill + "</color>");
             else
-                GUILayout.Label("Reconfigure Skill: NONE");
+                GUILayout.Label("<color=white>Reconfigure Skill: NONE</color>");
 
-            if (templateCount > 1)
+            //Templates
+            _scrollPosTemplates = GUILayout.BeginScrollView(_scrollPosTemplates);
+            foreach (ConfigNode nodeTemplate in this.templates)
             {
-                if (GUILayout.Button("Next") && previewNext != null)
-                    previewNext(templateName);
-            }
+                //Button label
+                if (nodeTemplate.HasValue("title"))
+                    buttonLabel = nodeTemplate.GetValue("title");
+                else if (nodeTemplate.HasValue("shortName"))
+                    buttonLabel = nodeTemplate.GetValue("shortName");
+                else
+                    buttonLabel = nodeTemplate.GetValue("name");
 
-            if (templateCount >= 4)
-            {
-                if (GUILayout.Button("Prev") && previewPrev != null)
+                //Icon
+                panelName = nodeTemplate.GetValue("logoPanel");
+                if (panelName != null)
+                    buttonDecal = GameDatabase.Instance.GetTexture(panelName, false);
+                else
+                    buttonDecal = null;
+
+                //Button
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button(buttonDecal, buttonOption))
                 {
-                    previewPrev(templateName);
+                    previewTemplate(nodeTemplate.GetValue("shortName"));
                 }
+                GUILayout.Label("<color=white>" + buttonLabel + "</color>");
+                GUILayout.EndHorizontal();
             }
+            GUILayout.EndScrollView();
 
             if (GUILayout.Button("Reconfigure") && setTemplate != null)
             {
-                if (confirmReconfigure)
+                if (confirmReconfigure || HighLogic.LoadedSceneIsEditor)
                 {
                     setTemplate(templateName);
                     confirmReconfigure = false;

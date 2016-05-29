@@ -22,7 +22,7 @@ namespace WildBlueIndustries
     {
         ConvertibleStorageView storageView = new ConvertibleStorageView();
 
-        [KSPEvent(guiActive = true, guiActiveUnfocused = true, unfocusedRange = 5.0f, guiName = "Reconfigure Storage")]
+        [KSPEvent(guiActiveEditor = true, guiActive = true, guiActiveUnfocused = true, unfocusedRange = 5.0f, guiName = "Reconfigure Storage")]
         public void ReconfigureStorage()
         {
             setupStorageView(CurrentTemplateIndex);
@@ -30,18 +30,25 @@ namespace WildBlueIndustries
             storageView.ToggleVisible();
         }
 
+        public override void OnStart(StartState state)
+        {
+            base.OnStart(state);
+            hideEditorButtons();
+        }
+
         public override void SetGUIVisible(bool isVisible)
         {
             base.SetGUIVisible(isVisible);
 
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                this.Events["NextType"].guiActive = false;
-                this.Events["PrevType"].guiActive = false;
-            }
+            hideEditorButtons();
 
             Events["ReconfigureStorage"].guiActive = isVisible;
             Events["ReconfigureStorage"].guiActiveUnfocused = isVisible;
+        }
+
+        protected override void hideEditorGUI(StartState state)
+        {
+            hideEditorButtons();
         }
 
         protected override void initModuleGUI()
@@ -50,52 +57,33 @@ namespace WildBlueIndustries
 
             hideEditorButtons();
 
-            storageView.previewNext = PreviewNext;
-            storageView.previewPrev = PreviewPrev;
+            storageView.previewTemplate = PreviewTemplate;
             storageView.setTemplate = SwitchTemplateType;
+            storageView.templates = this.templateManager.templateNodes;
         }
-
-        public override void RedecorateModule(bool loadTemplateResources = true)
+        public override void UpdateContentsAndGui(int templateIndex)
         {
-            base.RedecorateModule(loadTemplateResources);
-
+            base.UpdateContentsAndGui(templateIndex);
             hideEditorButtons();
         }
 
         protected void hideEditorButtons()
         {
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                Events["NextType"].guiActive = false;
-                Events["NextType"].guiActiveUnfocused = false;
-                Events["NextType"].guiActive = false;
+            Events["NextType"].guiActive = false;
+            Events["NextType"].guiActiveUnfocused = false;
+            Events["NextType"].guiActiveEditor = false;
 
-                Events["PrevType"].guiActive = false;
-                Events["PrevType"].guiActiveUnfocused = false;
-                Events["PrevType"].guiActive = false;
-            }
+            Events["PrevType"].guiActive = false;
+            Events["PrevType"].guiActiveUnfocused = false;
+            Events["PrevType"].guiActiveEditor = false;
         }
 
-        public void PreviewNext(string templateName)
+        public void PreviewTemplate(string templateName)
         {
             //Get the template index associated with the template name
             int curTemplateIndex = templateManager.FindIndexOfTemplate(templateName);
 
-            //Get the next available template index
-            int templateIndex = templateManager.GetNextUsableIndex(curTemplateIndex);
-
-            setupStorageView(templateIndex);
-        }
-
-        public void PreviewPrev(string templateName)
-        {
-            //Get the template index associated with the template name
-            int curTemplateIndex = templateManager.FindIndexOfTemplate(templateName);
-
-            //Get the previous available template index
-            int templateIndex = templateManager.GetPrevUsableIndex(curTemplateIndex);
-
-            setupStorageView(templateIndex);
+            setupStorageView(curTemplateIndex);
         }
 
         public void SwitchTemplateType(string templateName)
