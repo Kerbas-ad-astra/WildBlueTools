@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Module Switcher")]
     public class WBIModuleSwitcher : WBIResourceSwitcher
     {
         protected List<PartModule> addedPartModules = new List<PartModule>();

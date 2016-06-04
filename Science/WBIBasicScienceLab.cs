@@ -19,6 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Basic Science Lab")]
     public class WBIBasicScienceLab : WBIResourceConverter
     {
         private const float kBaseResearchDivisor = 1.75f;
@@ -272,7 +273,7 @@ namespace WildBlueIndustries
 
             foreach (ModuleScienceLab scienceLab in labs)
             {
-                if (scienceLab.isEnabled && scienceLab.enabled)
+                if (scienceLab.isEnabled && scienceLab.enabled && scienceLab.part.protoModuleCrew.Count >= scienceLab.crewsRequired)
                 {
                     lab = scienceLab;
                     break;
@@ -282,6 +283,7 @@ namespace WildBlueIndustries
             //No lab on the vessel? Then we're done.
             if (lab == null)
             {
+                ScreenMessages.PostScreenMessage("Can't find an available/crewed laboratory!", 5.0f, ScreenMessageStyle.UPPER_CENTER);
                 Log("No ModuleScienceLab to transfer to!");
                 return;
             }

@@ -21,6 +21,7 @@ namespace WildBlueIndustries
     public delegate void ModuleRedecoratedEvent(ConfigNode templateNode);
     public delegate void ResourcesDumpedEvent();
 
+    [KSPModule("Resource Switcher")]
     public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier, IPartMassModifier
     {
         private static string MAIN_TEXTURE = "_MainTex";

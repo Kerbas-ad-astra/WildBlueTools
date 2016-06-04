@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Resource Converter")]
     public class WBIResourceConverter : ModuleResourceConverter
     {
         private const float kminimumSuccess = 80f;

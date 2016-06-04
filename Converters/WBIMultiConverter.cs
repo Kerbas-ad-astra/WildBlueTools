@@ -28,6 +28,7 @@ namespace WildBlueIndustries
         void SetOpsView(OpsView view);
     }
 
+    [KSPModule("Multi-Converter")]
     public class WBIMultiConverter : WBIAffordableSwitcher
     {
         [KSPField]

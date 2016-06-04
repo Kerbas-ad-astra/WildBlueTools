@@ -28,6 +28,7 @@ namespace WildBlueIndustries
         void ExperimentRequirementsMet(float resultRoll);
     }
 
+    [KSPModule("Science Experiment")]
     public class WBIModuleScienceExperiment : ModuleScienceExperiment
     {
         [KSPField(isPersistant = true)]

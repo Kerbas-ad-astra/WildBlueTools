@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Light")]
     public class WBILight : WBIAnimation
     {
         protected const int kDefaultLightAnimationLayer = 3;
