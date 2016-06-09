@@ -366,7 +366,7 @@ namespace WildBlueIndustries
                     if (this.part.CrewCapacity == 0 && originalCrewCapacity > 0 && HighLogic.LoadedSceneIsFlight)
                         this.part.DespawnIVA();
                 }
-                else if (!isInflatable)
+                else if (!isInflatable && this.part.CrewCapacity != originalCrewCapacity)
                 {
                     this.part.CrewCapacity = originalCrewCapacity;
                     if (this.part.CrewCapacity > 0 && HighLogic.LoadedSceneIsFlight)

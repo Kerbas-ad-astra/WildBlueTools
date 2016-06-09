@@ -279,11 +279,7 @@ namespace WildBlueIndustries
 
                     //Load up the config
                     loadModuleSettings(module, moduleNode, addedPartModules.Count - 1);
-                    if (HighLogic.LoadedSceneIsFlight)
-                    {
-                        Log("Calling module.Load");
-                        module.Load(moduleNode);
-                    }
+                    module.Load(moduleNode);
 
                     //Start it up
                     if (HighLogic.LoadedSceneIsFlight)

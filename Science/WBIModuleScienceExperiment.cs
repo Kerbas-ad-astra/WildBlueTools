@@ -169,6 +169,7 @@ namespace WildBlueIndustries
         public bool CheckCompletion()
         {
             float resultRoll = 100f;
+            bool partHasRequiredResource = false;
 
             if (HighLogic.LoadedSceneIsFlight == false)
                 return false;
@@ -272,6 +273,7 @@ namespace WildBlueIndustries
                 {
                     if (resourceMap.ContainsKey(resource.resourceName))
                     {
+                        partHasRequiredResource = true;
                         if (resource.amount < resource.maxAmount)
                         {
                             status = "Needs more " + resource.resourceName;
@@ -280,6 +282,10 @@ namespace WildBlueIndustries
                     }
                 }
             }
+
+            //If the part has none of the required resources then we're done.
+            if (partHasRequiredResource == false)
+                return false;
 
             //chanceOfSuccess
             if (chanceOfSuccess > 0.001f && isCompleted == false && experimentFailed == false)

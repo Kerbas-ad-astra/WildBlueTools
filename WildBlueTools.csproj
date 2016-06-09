@@ -47,9 +47,6 @@
     <Reference Include="KSPUtil">
       <HintPath>..\..\..\..\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program\KSP_x64_Data\Managed\KSPUtil.dll</HintPath>
     </Reference>
-    <Reference Include="RemoteTech">
-      <HintPath>..\..\..\..\KSPDev\GameData\RemoteTech\Plugins\RemoteTech.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -121,6 +118,7 @@
     <Compile Include="Science\WBIModuleScienceExperiment.cs" />
     <Compile Include="Science\WBIExperimentManifest.cs" />
     <Compile Include="Utilities\WBINodeMover.cs" />
+    <Compile Include="Utilities\WBIRTWrapper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
