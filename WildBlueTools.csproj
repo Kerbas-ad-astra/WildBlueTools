@@ -119,6 +119,7 @@
     <Compile Include="Science\WBIExperimentManifest.cs" />
     <Compile Include="Utilities\WBINodeMover.cs" />
     <Compile Include="Utilities\WBIRTWrapper.cs" />
+    <Compile Include="Parts\WBIModuleDecouple.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

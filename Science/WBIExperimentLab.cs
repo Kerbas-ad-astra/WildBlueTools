@@ -26,7 +26,7 @@ namespace WildBlueIndustries
         public string defaultExperiment = "WBIEmptyExperiment";
 
         [KSPField(isPersistant = true)]
-        public bool isGUIVisible;
+        public bool isGUIVisible = true;
 
         public List<WBIModuleScienceExperiment> experimentSlots = null;
 
@@ -75,6 +75,7 @@ namespace WildBlueIndustries
             GetExperimentSlots();
             switcher = this.part.FindModuleImplementing<WBIResourceSwitcher>();
             manifestAdmin.SetupView(this.part, !HighLogic.LoadedSceneIsEditor, !HighLogic.LoadedSceneIsEditor, this);
+            SetupGUI(isGUIVisible);
         }
 
         public override void OnUpdate()
