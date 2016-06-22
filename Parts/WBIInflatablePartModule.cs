@@ -20,31 +20,35 @@ namespace WildBlueIndustries
 {
     public class WBIInflatablePartModule : ExtendedPartModule
     {
-        [KSPField(isPersistant = true)]
+        [KSPField()]
+        public string animationName = string.Empty;
+
+        [KSPField()]
+        public string startEventGUIName = string.Empty;
+
+        [KSPField()]
+        public string endEventGUIName = string.Empty;
+
+        [KSPField()]
         public bool flightAnimationOnly;
 
         [KSPField(isPersistant = true)]
-        public string animationName;
-
-        [KSPField(isPersistant = true)]
-        public string startEventGUIName;
-
-        [KSPField(isPersistant = true)]
-        public string endEventGUIName;
-
-        [KSPField]
-        public bool overridePartAttachRestriction = false;
+        public bool isDeployed = false;
 
         [KSPField()]
         public bool isInflatable = false;
 
         [KSPField()]
-        public string inflatableColliders;
+        public string inflatableColliders = string.Empty;
+
+        [KSPField()]
+        public bool overridePartAttachRestriction = false;
+
+        [KSPField()]
+        public int inflatedCrewCapacity = 0;
 
         //Helper objects
         public bool animationStarted = false;
-        public bool isDeployed = false;
-        public int inflatedCrewCapacity = 0;
 
         #region User Events & API
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "ToggleInflation", externalToEVAOnly = false, unfocusedRange = 3.0f, guiActiveUnfocused = true)]
@@ -111,20 +115,8 @@ namespace WildBlueIndustries
         #region Overrides
         public override void OnLoad(ConfigNode node)
         {
-            string value;
+            //string value;
             base.OnLoad(node);
-
-            value = node.GetValue("isDeployed");
-            if (string.IsNullOrEmpty(value) == false)
-                isDeployed = bool.Parse(value);
-
-            value = node.GetValue("isInflatable");
-            if (string.IsNullOrEmpty(value) == false)
-                isInflatable = bool.Parse(value);
-
-            value = node.GetValue("inflatedCrewCapacity");
-            if (string.IsNullOrEmpty(value) == false)
-                inflatedCrewCapacity = int.Parse(value);
 
             try
             {
@@ -135,15 +127,6 @@ namespace WildBlueIndustries
             {
                 Log("Error encountered while attempting to setup animations: " + ex.ToString());
             }
-        }
-
-        public override void OnSave(ConfigNode node)
-        {
-            base.OnSave(node);
-
-            node.AddValue("isDeployed", isDeployed.ToString());
-            node.AddValue("isInflatable", isDeployed.ToString());
-            node.AddValue("inflatedCrewCapacity", inflatedCrewCapacity.ToString());
         }
 
         protected override void getProtoNodeValues(ConfigNode protoNode)
@@ -171,6 +154,7 @@ namespace WildBlueIndustries
             }
         }
 
+        
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -178,7 +162,7 @@ namespace WildBlueIndustries
             SetupAnimations();
             setupColliders();
             setupInventories();
-            if (isInflatable && isDeployed == false)
+            if (isInflatable && isDeployed == false && HighLogic.LoadedSceneIsFlight)
                 this.part.DespawnIVA();
 
             if (string.IsNullOrEmpty(animationName))
@@ -191,9 +175,11 @@ namespace WildBlueIndustries
             else if (flightAnimationOnly)
                 Events["ToggleInflation"].guiActiveEditor = false;
         }
+         
         #endregion
 
         #region Helpers
+         
         protected virtual void setupInventories()
         {
             WBIKISInventoryWrapper inventory;

@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Module Switcher")]
     public class WBIModuleSwitcher : WBIResourceSwitcher
     {
         protected List<PartModule> addedPartModules = new List<PartModule>();
@@ -76,7 +77,14 @@ namespace WildBlueIndustries
 
                 //Tell the module to save its data
                 saveNode.name = "WBIMODULE";
-                addedModule.Save(saveNode);
+                try
+                {
+                    addedModule.Save(saveNode);
+                }
+                catch (Exception ex)
+                {
+                    string exInfo = ex.ToString();
+                }
 
                 //Add it to our node
                 node.AddNode(saveNode);
@@ -170,28 +178,6 @@ namespace WildBlueIndustries
             }
         }
 
-        protected void loadModuleSettings(PartModule module, int index)
-        {
-            Log("loadModuleSettings called");
-            if (index > moduleSettings.Count - 1)
-            {
-                Log("Index > moduleSettings.Count!");
-                return;
-            }
-            ConfigNode nodeSettings = moduleSettings[index];
-
-            //nodeSettings may have persistent fields. If so, then set them.
-            foreach (ConfigNode.Value nodeValue in nodeSettings.values)
-            {
-                if (nodeValue.name != "name")
-                {
-                    if (module.Fields[nodeValue.name] != null)
-                        module.Fields[nodeValue.name].Read(nodeValue.value, module);
-                    Log("Set " + nodeValue.name + " to " + nodeValue.value);
-                }
-            }
-        }
-
         protected bool canLoadModule(ConfigNode node)
         {
             string value;
@@ -271,13 +257,13 @@ namespace WildBlueIndustries
 
                     //Load up the config
                     loadModuleSettings(module, moduleNode, addedPartModules.Count - 1);
-                    Log("Calling module.Load");
                     module.Load(moduleNode);
 
                     //Start it up
-                    Log("calling module.OnStart with state: " + this.part.vessel.situation);
                     if (HighLogic.LoadedSceneIsFlight)
                     {
+                        Log("calling module.OnStart with state: " + this.part.vessel.situation);
+
                         switch (this.part.vessel.situation)
                         {
                             case Vessel.Situations.ORBITING:
@@ -313,9 +299,13 @@ namespace WildBlueIndustries
                 }
                 catch (Exception ex)
                 {
-                    Log("loadModulesFromTemplate encountered an error: " + ex);
+                    Log("loadModulesFromTemplate encountered an error: " + ex + ". Moving on to next PartModule");
+                    continue;
                 }
             }//foreach
+
+            //Clear the module settings after loading all the part modules
+            moduleSettings.Clear();
         }
         #endregion
     }

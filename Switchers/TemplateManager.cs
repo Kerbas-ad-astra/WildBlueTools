@@ -38,6 +38,7 @@ namespace WildBlueIndustries
         private string _templateNodeName;
         private string _allowedTags;
         private static List<string> partTokens;
+        protected static Dictionary<string, string> techNodeTitles;
 
         #region API
         public TemplateManager(Part part, Vessel vessel, LogDelegate logDelegate, string template = "nodeTemplate", string allowedTags = null)
@@ -111,7 +112,7 @@ namespace WildBlueIndustries
             for (int index = 0; index < this.templateNodes.Length; index++)
             {
                 node = this.templateNodes[index];
-                Log("Template " + index + ": " + node.GetValue("shortName"));
+                Log("Template " + index + ": " + node.GetValue("shortName") + ", " + node.GetValue("name"));
             }
         }
 
@@ -180,6 +181,55 @@ namespace WildBlueIndustries
                 return EInvalidTemplateReasons.RequiredModuleNotFound;
         }
 
+        public static string GetTechTreeTitle(ConfigNode nodeTemplate)
+        {
+            string value;
+            
+            if (ResearchAndDevelopment.Instance != null)
+            {
+                value = nodeTemplate.GetValue("TechRequired");
+                if (string.IsNullOrEmpty(value))
+                    return string.Empty;
+
+                //Build cache if needed
+                if (techNodeTitles == null)
+                {
+                    techNodeTitles = new Dictionary<string, string>();
+                    ConfigNode[] nodes = GameDatabase.Instance.GetConfigNodes("TechTree");
+                    nodes = nodes[0].GetNodes("RDNode");
+
+                    foreach (ConfigNode node in nodes)
+                        techNodeTitles.Add(node.GetValue("id"), node.GetValue("title"));
+                }
+
+                //Now find the title
+                if (techNodeTitles.ContainsKey(value))
+                    return techNodeTitles[value];
+                else
+                    return string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        public static bool TemplateTechResearched(ConfigNode nodeTemplate)
+        {
+            string value;
+
+            //If we are in career mode, make sure we have unlocked the tech node.
+            if (ResearchAndDevelopment.Instance != null)
+            {
+                value = nodeTemplate.GetValue("TechRequired");
+                if (string.IsNullOrEmpty(value))
+                    return true;
+
+                if (ResearchAndDevelopment.GetTechnologyState(value) != RDTech.State.Available)
+                    return false;
+            }
+
+            return true;
+        }
+
         public EInvalidTemplateReasons CanUseTemplate(ConfigNode nodeTemplate)
         {
             string value;
@@ -190,6 +240,7 @@ namespace WildBlueIndustries
             if (this.vessel == null)
                 this.vessel = this.part.vessel;
 
+            /*
             //If we are in career mode, make sure we have unlocked the tech node.
             if (ResearchAndDevelopment.Instance != null)
             {
@@ -200,6 +251,7 @@ namespace WildBlueIndustries
                 if (ResearchAndDevelopment.GetTechnologyState(value) != RDTech.State.Available)
                     return EInvalidTemplateReasons.TechNotUnlocked;
             }
+             */
 
             //If we need a specific mod then check for it.
             value = nodeTemplate.GetValue("needs");

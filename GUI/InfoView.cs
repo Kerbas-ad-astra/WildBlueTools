@@ -7,7 +7,7 @@ using KSP.IO;
 
 namespace WildBlueIndustries
 {
-    public class InfoView : Window<OpsView>
+    public class InfoView : Window<InfoView>
     {
         public string ModuleInfo;
         public Texture moduleLabel;

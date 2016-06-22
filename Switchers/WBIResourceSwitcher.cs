@@ -21,7 +21,8 @@ namespace WildBlueIndustries
     public delegate void ModuleRedecoratedEvent(ConfigNode templateNode);
     public delegate void ResourcesDumpedEvent();
 
-    public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier
+    [KSPModule("Resource Switcher")]
+    public class WBIResourceSwitcher : WBIInflatablePartModule, IPartCostModifier, IPartMassModifier
     {
         private static string MAIN_TEXTURE = "_MainTex";
         private static string EMISSIVE_TEXTURE = "_Emissive";
@@ -29,37 +30,9 @@ namespace WildBlueIndustries
         [KSPField(isPersistant = true)]
         public int currentVolume;
 
-        //Events
-        public event ModuleRedecoratedEvent onModuleRedecorated;
-        public event ResourcesDumpedEvent onResourcesDumped;
-
-        //Index of the current module template we're using.
-        public int CurrentTemplateIndex;
-
-        //Determines whether or not the resource container can be reconfigured in the field.
-        public bool fieldReconfigurable = false;
-
-        //Decal names (these are the names of the graphics assets, including file path)
-        protected string logoPanelName;
-        protected string glowPanelName;
-
         //Name of the template nodes.
         [KSPField(isPersistant = true)]
-        public string templateNodes;
-
-        //Name of the transform(s) for the colony decal.
-        //These names come from the model itself.
-        private string _logoPanelTransforms;
-
-        //List of resources that we must keep when performing a template switch.
-        //If set to NONE, then all of the part's resources will be cleared.
-        private string _resourcesToKeep = "NONE";
-
-        //Name of the template types allowed
-        private string _allowedTags;
-
-        //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
-        private string _defaultTemplate;
+        public string templateNodes = string.Empty;
 
         //Base amount of volume the part stores, if any.
         [KSPField(isPersistant = true)]
@@ -79,6 +52,37 @@ namespace WildBlueIndustries
         //applies to the container.
         [KSPField(isPersistant = true)]
         public float capacityFactor = 0f;
+
+        //Events
+        public event ModuleRedecoratedEvent onModuleRedecorated;
+        public event ResourcesDumpedEvent onResourcesDumped;
+
+        [KSPField(isPersistant = true)]
+        public float partMass = 0f;
+
+        //Index of the current module template we're using.
+        public int CurrentTemplateIndex;
+
+        //Determines whether or not the resource container can be reconfigured in the field.
+        public bool fieldReconfigurable = false;
+
+        //Decal names (these are the names of the graphics assets, including file path)
+        protected string logoPanelName;
+        protected string glowPanelName;
+
+        //Name of the transform(s) for the colony decal.
+        //These names come from the model itself.
+        protected string logoPanelTransforms;
+
+        //List of resources that we must keep when performing a template switch.
+        //If set to NONE, then all of the part's resources will be cleared.
+        private string _resourcesToKeep = "NONE";
+
+        //Name of the template types allowed
+        private string _allowedTags;
+
+        //Used when, say, we're in the editor, and we don't get no game-saved values from perisistent.
+        private string _defaultTemplate;
 
         //Helper objects
         protected string techRequiredToReconfigure;
@@ -328,6 +332,9 @@ namespace WildBlueIndustries
                 if (nodeTemplate.HasValue("capacityFactor"))
                     capacityModifier = float.Parse(nodeTemplate.GetValue("capacityFactor"));
 
+                if (nodeTemplate.HasValue("mass"))
+                    partMass = float.Parse(nodeTemplate.GetValue("mass"));
+
                 //Get max resource amounts if the part is inflatable.
                 if (isInflatable)
                 {
@@ -359,7 +366,7 @@ namespace WildBlueIndustries
                     if (this.part.CrewCapacity == 0 && originalCrewCapacity > 0 && HighLogic.LoadedSceneIsFlight)
                         this.part.DespawnIVA();
                 }
-                else if (!isInflatable)
+                else if (!isInflatable && this.part.CrewCapacity != originalCrewCapacity)
                 {
                     this.part.CrewCapacity = originalCrewCapacity;
                     if (this.part.CrewCapacity > 0 && HighLogic.LoadedSceneIsFlight)
@@ -436,7 +443,7 @@ namespace WildBlueIndustries
             return GetModuleCost();
         }
 
-        public float GetModuleCost(float defaultCost, ModifierStagingSituation sit)
+        public virtual float GetModuleCost(float defaultCost, ModifierStagingSituation sit)
         {
             return GetModuleCost();
         }
@@ -747,7 +754,7 @@ namespace WildBlueIndustries
             //Init the module GUI
             initModuleGUI();
 
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
             {
                 Events["ToggleDecals"].guiActive = false;
                 Events["ToggleDecals"].guiActiveEditor = false;
@@ -989,11 +996,11 @@ namespace WildBlueIndustries
 
         public void ShowDecals(bool isVisible)
         {
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
                 return;
 
             char[] delimiters = { ',' };
-            string[] transformNames = _logoPanelTransforms.Replace(" ", "").Split(delimiters);
+            string[] transformNames = logoPanelTransforms.Replace(" ", "").Split(delimiters);
             Transform[] targets;
 
             //Sanity checks
@@ -1028,14 +1035,14 @@ namespace WildBlueIndustries
         {
             Log("changeDecals called.");
 
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
             {
                 Log("changeDecals has no named transforms to change.");
                 return;
             }
 
             char[] delimiters = { ',' };
-            string[] transformNames = _logoPanelTransforms.Replace(" ", "").Split(delimiters);
+            string[] transformNames = logoPanelTransforms.Replace(" ", "").Split(delimiters);
             Transform[] targets;
             Texture textureForDecal;
             Renderer rendererMaterial;
@@ -1126,8 +1133,8 @@ namespace WildBlueIndustries
             }
 
             //Get the list of transforms for the logo panels.
-            if (_logoPanelTransforms == null)
-                _logoPanelTransforms = protoNode.GetValue("logoPanelTransform");
+            if (logoPanelTransforms == null)
+                logoPanelTransforms = protoNode.GetValue("logoPanelTransform");
         }
 
         protected virtual void hideEditorGUI(PartModule.StartState state)
@@ -1152,7 +1159,7 @@ namespace WildBlueIndustries
             }
         }
 
-        public void SetGUIVisible(bool isVisible)
+        public virtual void SetGUIVisible(bool isVisible)
         {
             Events["NextType"].active = isVisible;
             Events["PrevType"].active = isVisible;
@@ -1160,7 +1167,7 @@ namespace WildBlueIndustries
             Fields["shortName"].guiActive = isVisible;
             Fields["shortName"].guiActiveEditor = isVisible;            
 
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
             {
                 Events["ToggleDecals"].guiActive = false;
                 Events["ToggleDecals"].guiActiveEditor = false;
@@ -1272,6 +1279,28 @@ namespace WildBlueIndustries
         {
             return true;
         }        
+        #endregion
+
+        #region IPartMassModifier
+        public virtual float CalculatePartMass(float defaultMass, float currentPartMass)
+        {
+            if (partMass > 0.001f && isInflatable == false)
+                return partMass;
+            else if (partMass > 0.001f && isInflatable && isDeployed)
+                return partMass;
+            else
+                return defaultMass;
+        }
+
+        public float GetModuleMass(float defaultMass, ModifierStagingSituation sit)
+        {
+            return CalculatePartMass(defaultMass, partMass);
+        }
+
+        public ModifierChangeWhen GetModuleMassChangeWhen()
+        {
+            return ModifierChangeWhen.CONSTANTLY;
+        }
         #endregion
     }
 }

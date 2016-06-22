@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Template Converter")]
     public class WBITemplateConverter : ExtendedPartModule
     {
         private const string kNeedAdditionalParts = "Insufficient resources to reconfigure the module. You need an additional {0:f2} {1:s} to reconfigure.";

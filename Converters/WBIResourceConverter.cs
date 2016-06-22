@@ -18,6 +18,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
+    [KSPModule("Resource Converter")]
     public class WBIResourceConverter : ModuleResourceConverter
     {
         private const float kminimumSuccess = 80f;
@@ -54,10 +55,10 @@ namespace WildBlueIndustries
         public double cycleStartTime;
 
         [KSPField(guiActive = true, guiName = "Progress", isPersistant = true)]
-        public string progress;
+        public string progress = string.Empty;
 
         [KSPField(guiActive = true, guiName = "Last Attempt", isPersistant = true)]
-        public string lastAttempt;
+        public string lastAttempt = string.Empty;
 
         [KSPField(isPersistant = true)]
         public bool showGUI = true;

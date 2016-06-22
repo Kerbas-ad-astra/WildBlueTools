@@ -120,22 +120,20 @@ namespace WildBlueIndustries
             string modToCheck = null;
             bool checkInverse = false;
             bool modFound = false;
+            char[] delimiters = { '/' };
+            string[] tokens;
             List<string> partTokens = new List<string>();
 
             //Create the part tokens
             partTokens = new List<string>();
-            string url;
-            UrlDir.UrlConfig[] allConfigs = GameDatabase.Instance.root.AllConfigs.ToArray();
-            char[] delimiters = { '/' };
-            string[] tokens;
-
-            foreach (UrlDir.UrlConfig config in allConfigs)
+            foreach (AssemblyLoader.LoadedAssembly loadedAssembly in AssemblyLoader.loadedAssemblies)
             {
-                if (config.parent.url.Contains("Squad"))
-                    continue;
+                //Name
+                if (partTokens.Contains(loadedAssembly.name) == false)
+                    partTokens.Add(loadedAssembly.name);
 
-                url = config.parent.url.Substring(0, config.parent.url.LastIndexOf("/"));
-                tokens = url.Split(delimiters);
+                //URL tokens
+                tokens = loadedAssembly.url.Split(delimiters);
                 foreach (string token in tokens)
                 {
                     if (partTokens.Contains(token) == false)
