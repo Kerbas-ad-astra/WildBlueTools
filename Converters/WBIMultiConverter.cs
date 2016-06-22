@@ -18,229 +18,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace WildBlueIndustries
 {
-    public interface ITemplateOps
-    {
-        void DrawOpsWindow();
-    }
-
-    public interface ITemplateOps2 : ITemplateOps
-    {
-        void SetOpsView(OpsView view);
-    }
 
     [KSPModule("Multi-Converter")]
-    public class WBIMultiConverter : WBIAffordableSwitcher
+    public class WBIMultiConverter : WBIOpsManager
     {
         [KSPField]
         public float productivity = 1.0f;
 
         [KSPField]
         public float efficiency = 1.0f;
-
-        //Helper objects
-        protected ITemplateOps templateOps;
-        protected OpsView moduleOpsView = new OpsView();
-
-        #region User Events & API
-        public Texture GetModuleLogo(string templateName)
-        {
-            Texture moduleLogo = null;
-            string panelName;
-            ConfigNode nodeTemplate = templateManager[templateName];
-
-            panelName = nodeTemplate.GetValue("logoPanel");
-            if (panelName != null)
-                moduleLogo = GameDatabase.Instance.GetTexture(panelName, false);
-
-            return moduleLogo;
-        }
-
-        public virtual string GetModuleInfo(string templateName)
-        {
-            StringBuilder moduleInfo = new StringBuilder();
-            StringBuilder converterInfo = new StringBuilder();
-            ConfigNode nodeTemplate = templateManager[templateName];
-            string value;
-            PartModule partModule;
-            bool addConverterHeader = true;
-            bool includeModuleInfo = false;
-
-            if (nodeTemplate.HasValue("includeModuleInfo"))
-                includeModuleInfo = bool.Parse(nodeTemplate.GetValue("includeModuleInfo"));
-
-            value = nodeTemplate.GetValue("title");
-            if (!string.IsNullOrEmpty(value))
-                moduleInfo.Append(value + "\r\n");
-
-            value = nodeTemplate.GetValue("description");
-            if (!string.IsNullOrEmpty(value))
-                moduleInfo.Append("\r\n" + value + "\r\n");
-
-            value = nodeTemplate.GetValue("CrewCapacity");
-            if (!string.IsNullOrEmpty(value))
-                moduleInfo.Append("Crew Capacity: " + nodeTemplate.GetValue("CrewCapacity") + "\r\n");
-
-            //Add just the converters
-            ConfigNode[] moduleNodes = nodeTemplate.nodes.GetNodes("MODULE");
-            foreach (ConfigNode moduleNode in moduleNodes)
-            {
-                if (moduleNode.GetValue("name") == "ModuleResourceConverter")
-                {
-                    if (addConverterHeader)
-                    {
-                        converterInfo.Append("\r\n<b>Conversions</b>\r\n\r\n");
-                        addConverterHeader = false;
-                    }
-
-                    partModule = this.part.AddModule("ModuleResourceConverter");
-                    partModule.Load(moduleNode);
-                    converterInfo.Append(partModule.GetInfo());
-                    converterInfo.Append("\r\n");
-                    this.part.RemoveModule(partModule);
-                }
-
-                else if (includeModuleInfo)
-                {
-                    partModule = this.part.AddModule(moduleNode.GetValue("name"));
-                    partModule.Load(moduleNode);
-                    moduleInfo.Append(partModule.GetInfo());
-                    moduleInfo.Append("\r\n");
-                    this.part.RemoveModule(partModule);
-                }
-            }
-
-            moduleInfo.Append(converterInfo.ToString());
-
-            return moduleInfo.ToString();
-        }
-
-        public void PreviewNextTemplate(string templateName)
-        {
-            //Get the template index associated with the template name
-            int curTemplateIndex = templateManager.FindIndexOfTemplate(templateName);
-
-            //Get the next available template index
-            int templateIndex = templateManager.GetNextUsableIndex(curTemplateIndex);
-
-            //Set preview name to the new template's name
-            moduleOpsView.previewName = templateManager[templateIndex].GetValue("shortName");
-            moduleOpsView.cost = getTemplateCost(templateIndex);
-            moduleOpsView.requiredResource = templateManager[templateIndex].GetValue("requiredResource");
-
-            //Get next template name
-            templateIndex = templateManager.GetNextUsableIndex(templateIndex);
-            if (templateIndex != -1 && templateIndex != curTemplateIndex)
-                moduleOpsView.nextName = templateManager[templateIndex].GetValue("shortName");
-
-            //Get previous template name
-            moduleOpsView.prevName = templateName;
-        }
-
-        public void PreviewPrevTemplate(string templateName)
-        {
-            //Get the template index associated with the template name
-            int curTemplateIndex = templateManager.FindIndexOfTemplate(templateName);
-
-            //Get the previous available template index
-            int templateIndex = templateManager.GetPrevUsableIndex(curTemplateIndex);
-
-            //Set preview name to the new template's name
-            moduleOpsView.previewName = templateManager[templateIndex].GetValue("shortName");
-            moduleOpsView.cost = getTemplateCost(templateIndex);
-            moduleOpsView.requiredResource = templateManager[templateIndex].GetValue("requiredResource");
-
-            //Get next template name (which will be the current template)
-            moduleOpsView.nextName = templateName;
-
-            //Get previous template name
-            templateIndex = templateManager.GetPrevUsableIndex(templateIndex);
-            if (templateIndex != -1 && templateIndex != curTemplateIndex)
-                moduleOpsView.prevName = templateManager[templateIndex].GetValue("shortName");
-        }
-
-        public void SwitchTemplateType(string templateName)
-        {
-            Log("SwitchTemplateType called.");
-
-            //Can we use the index?
-            EInvalidTemplateReasons reasonCode = templateManager.CanUseTemplate(templateName);
-            if (reasonCode == EInvalidTemplateReasons.TemplateIsValid)
-            {
-                //If we require specific skills to perform the reconfigure, do we have sufficient skill to reconfigure it?
-                if (checkForSkill)
-                {
-                    if (hasSufficientSkill(templateName) == false)
-                        return;
-                }
-
-                //If we have to pay to reconfigure the module, then do our checks.
-                if (payForReconfigure)
-                {
-                    //Can we afford it?
-                    if (canAffordReconfigure(templateName) == false)
-                        return;
-
-                    //Yup, we can afford it
-                    //Pay the reconfigure cost
-                    payPartsCost(templateManager.FindIndexOfTemplate(templateName));
-                }
-
-                //Update contents
-                UpdateContentsAndGui(templateName);
-                return;
-            }
-
-            switch (reasonCode)
-            {
-                case EInvalidTemplateReasons.InvalidIndex:
-                    ScreenMessages.PostScreenMessage("Cannot find a suitable template.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                    break;
-
-                case EInvalidTemplateReasons.TechNotUnlocked:
-                    ScreenMessages.PostScreenMessage("More research is required to switch to the module.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                    break;
-
-                default:
-                    ScreenMessages.PostScreenMessage("Could not switch the module.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                    break;
-            }
-        }
-
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Manage Operations", active = true, guiActiveUnfocused = true, unfocusedRange = 3.0f)]
-        public void ManageOperations()
-        {
-            Log("ManageOperations called");
-            int templateIndex = CurrentTemplateIndex;
-
-            //Set short name
-            moduleOpsView.shortName = shortName;
-
-            //Minimum tech
-            moduleOpsView.techResearched = true;
-            moduleOpsView.fieldReconfigurable = fieldReconfigurable;
-
-            //Templates
-            moduleOpsView.templateCount = templateManager.templateNodes.Length;
-
-            //Set preview, next, and previous
-            if (HighLogic.LoadedSceneIsEditor == false)
-            {
-                moduleOpsView.previewName = shortName;
-                moduleOpsView.cost = getTemplateCost(templateIndex);
-                moduleOpsView.requiredResource = templateManager[templateIndex].GetValue("requiredResource");
-
-                templateIndex = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
-                if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
-                    moduleOpsView.nextName = templateManager[templateIndex].GetValue("shortName");
-
-                templateIndex = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
-                if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
-                    moduleOpsView.prevName = templateManager[templateIndex].GetValue("shortName");
-            }
-
-            moduleOpsView.SetVisible(true);
-        }
-        #endregion
 
         #region Module Overrides
 
@@ -249,7 +35,7 @@ namespace WildBlueIndustries
             base.OnUpdate();
 
             //Show/hide the inflate/deflate button depending upon whether or not crew is aboard
-            if (isInflatable)
+            if (isInflatable && HighLogic.LoadedSceneIsFlight)
             {
                 if (this.part.protoModuleCrew.Count() > 0)
                 {
@@ -267,20 +53,25 @@ namespace WildBlueIndustries
 
         public override void ToggleInflation()
         {
-            string requiredName = CurrentTemplate.GetValue("requiredResource");
-            PartResourceDefinition definition = ResourceHelper.DefinitionForResource(requiredName);
-            Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
-            string parts = CurrentTemplate.GetValue("requiredAmount");
-
-            if (string.IsNullOrEmpty(parts))
+            if (CurrentTemplate.HasValue("requiredResource") == false)
             {
                 base.ToggleInflation();
                 return;
             }
-            float partCost = float.Parse(parts);
+
+            string requiredName = CurrentTemplate.GetValue("requiredResource");
+            string requiredAmount = CurrentTemplate.GetValue("requiredAmount");
+            float totalResources = (float)ResourceHelper.GetTotalResourceAmount(requiredName, this.part.vessel);
+
+            if (string.IsNullOrEmpty(requiredAmount))
+            {
+                base.ToggleInflation();
+                return;
+            }
+            float resourceCost = float.Parse(requiredAmount);
 
             calculateRemodelCostModifier();
-            float adjustedPartCost = partCost;
+            float adjustedPartCost = resourceCost;
             if (reconfigureCostModifier > 0f)
                 adjustedPartCost *= reconfigureCostModifier;
 
@@ -291,10 +82,10 @@ namespace WildBlueIndustries
                 if (!isDeployed)
                 {
                     //Can we afford it?
-                    if (resource == null || resource.amount < adjustedPartCost)
+                    if (totalResources < adjustedPartCost)
                     {
                         notEnoughParts();
-                        string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} " + requiredName + " to assemble.", partCost);
+                        string notEnoughPartsMsg = string.Format("Insufficient resources to assemble the module. You need a total of {0:f2} " + requiredName + " to assemble.", resourceCost);
                         ScreenMessages.PostScreenMessage(notEnoughPartsMsg, 5.0f, ScreenMessageStyle.UPPER_CENTER);
                         return;
                     }
@@ -322,6 +113,8 @@ namespace WildBlueIndustries
                         float recycleAmount = adjustedPartCost;
 
                         //Do we have sufficient space in the vessel to store the recycled parts?
+                        PartResourceDefinition definition = ResourceHelper.DefinitionForResource(requiredName);
+                        Vessel.ActiveResource resource = this.part.vessel.GetActiveResource(definition);
                         float availableStorage = (float)(resource.maxAmount - resource.amount);
 
                         if (availableStorage < recycleAmount)
@@ -362,20 +155,6 @@ namespace WildBlueIndustries
         {
         }
 
-        public override void OnStart(PartModule.StartState state)
-        {
-            if (!HighLogic.LoadedSceneIsEditor && !HighLogic.LoadedSceneIsFlight)
-                return;
-
-            //Create the module ops window.
-            createModuleOpsView();
-
-            //Now we can call the base method.
-            base.OnStart(state);
-
-            moduleOpsView.UpdateConverters();
-        }
-
         #endregion
 
         #region Helpers
@@ -390,39 +169,6 @@ namespace WildBlueIndustries
                 return "0";
         }
 
-        protected virtual void drawTemplateOps()
-        {
-            if (templateOps != null)
-                templateOps.DrawOpsWindow();
-        }
-
-        protected virtual bool templateHasOpsWindow()
-        {
-            ITemplateOps2 templateOps2 = this.part.FindModuleImplementing<ITemplateOps2>();
-            if (templateOps2 != null)
-                templateOps2.SetOpsView(moduleOpsView);
-
-            templateOps = this.part.FindModuleImplementing<ITemplateOps>();
-
-            if (templateOps != null)
-                return true;
-            else
-                return false;
-        }
-
-        public void OnGUI()
-        {
-            try
-            {
-                if (moduleOpsView.IsVisible())
-                    moduleOpsView.DrawWindow();
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("Error in WBIMultiConverter-OnGUI: " + ex.ToString());
-            }
-        }
-
         protected override void loadModulesFromTemplate(ConfigNode templateNode)
         {
             base.loadModulesFromTemplate(templateNode);
@@ -433,50 +179,15 @@ namespace WildBlueIndustries
                 if (converter is WBIBasicScienceLab == false)
                     runHeadless(converter);
             }
-
-            moduleOpsView.UpdateConverters();
+            opsManagerView.UpdateButtonTabs();
         }
 
         public override void UpdateContentsAndGui(int templateIndex)
         {
             base.UpdateContentsAndGui(templateIndex);
-            string templateName;
-
-            //Change the OpsView's names
-            moduleOpsView.shortName = shortName;
-
-            templateIndex = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
-            if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
-            {
-                templateName = templateManager[templateIndex].GetValue("shortName");
-                moduleOpsView.nextName = templateName;
-            }
-
-            else
-            {
-                moduleOpsView.nextName = "none available";
-            }
-
-            templateIndex = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
-            if (templateIndex != -1 && templateIndex != CurrentTemplateIndex)
-            {
-                templateName = templateManager[templateIndex].GetValue("shortName");
-                moduleOpsView.prevName = templateName;
-            }
-
-            else
-            {
-                moduleOpsView.prevName = "none available";
-            }
 
             //Update productivity and efficiency
             updateProductivity();
-
-            if (moduleOpsView.IsVisible())
-            {
-                moduleOpsView.UpdateConverters();
-                moduleOpsView.resources = this.part.Resources;
-            }
         }
 
         protected virtual void updateProductivity()
@@ -513,69 +224,7 @@ namespace WildBlueIndustries
             if (tweakableUI != null)
                 tweakableUI.displayDirty = true;
         }
-        
-        protected virtual void createModuleOpsView()
-         {
-             Log("createModuleOpsView called");
 
-             try
-             {
-                 //moduleOpsView.converters = _multiConverter.converters;
-                 moduleOpsView.part = this.part;
-                 moduleOpsView.resources = this.part.Resources;
-                 moduleOpsView.nextModuleDelegate = new NextModule(NextType);
-                 moduleOpsView.prevModuleDelegate = new PrevModule(PrevType);
-                 moduleOpsView.nextPreviewDelegate = new NextPreviewModule(PreviewNextTemplate);
-                 moduleOpsView.prevPreviewDelegate = new PrevPreviewModule(PreviewPrevTemplate);
-                 moduleOpsView.getModuleInfoDelegate = new GetModuleInfo(GetModuleInfo);
-                 moduleOpsView.changeModuleTypeDelegate = new ChangeModuleType(SwitchTemplateType);
-                 moduleOpsView.getModuleLogoDelegate = new GetModuleLogo(GetModuleLogo);
-                 moduleOpsView.teplateHasOpsWindowDelegate = new TemplateHasOpsWindow(templateHasOpsWindow);
-                 moduleOpsView.drawTemplateOpsDelegate = new DrawTemplateOps(drawTemplateOps);
-                 moduleOpsView.GetPartModules();
-                 moduleOpsView.UpdateConverters();
-             }
-             catch (Exception ex)
-             {
-                 Debug.Log("Exception in createModuleOpsView: " + ex.ToString());
-             }
-         }
-
-        protected override void hideEditorGUI(PartModule.StartState state)
-        {
-            base.hideEditorGUI(state);
-        }
-
-        protected override void initModuleGUI()
-        {
-            base.initModuleGUI();
-            int index;
-            string value;
-            bool showNextPrevButtons = HighLogic.LoadedSceneIsEditor ? true : false;
-
-            //Next/prev buttons
-            Events["NextType"].guiActive = showNextPrevButtons;
-            Events["NextType"].active = showNextPrevButtons;
-            Events["PrevType"].guiActive = showNextPrevButtons;
-            Events["PrevType"].active = showNextPrevButtons;
-
-            Events["ManageOperations"].active = ShowGUI;
-
-            //Change the toggle button's name
-            index = templateManager.GetNextUsableIndex(CurrentTemplateIndex);
-            if (index != -1 && index != CurrentTemplateIndex)
-            {
-                value = templateManager.templateNodes[index].GetValue("shortName");
-                moduleOpsView.nextName = value;
-            }
-
-            index = templateManager.GetPrevUsableIndex(CurrentTemplateIndex);
-            if (index != -1 && index != CurrentTemplateIndex)
-            {
-                value = templateManager.templateNodes[index].GetValue("shortName");
-                moduleOpsView.prevName = value;
-            }
-        }
         #endregion
 
     }

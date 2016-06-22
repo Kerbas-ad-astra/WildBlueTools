@@ -19,12 +19,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace WildBlueIndustries
 {
     [KSPModule("Convertible Storage")]
-    public class WBIConvertibleStorage : WBIAffordableSwitcher
+    public class WBIConvertibleStorage : WBIAffordableSwitcher, IOpsView
     {
-        ConvertibleStorageView storageView = new ConvertibleStorageView();
+        protected ConvertibleStorageView storageView = new ConvertibleStorageView();
 
         [KSPEvent(guiActiveEditor = true, guiActive = true, guiActiveUnfocused = true, unfocusedRange = 5.0f, guiName = "Reconfigure Storage")]
-        public void ReconfigureStorage()
+        public virtual void ReconfigureStorage()
         {
             setupStorageView(CurrentTemplateIndex);
 
@@ -60,8 +60,9 @@ namespace WildBlueIndustries
 
             storageView.previewTemplate = PreviewTemplate;
             storageView.setTemplate = SwitchTemplateType;
-            storageView.templates = this.templateManager.templateNodes;
+            storageView.templateManager = this.templateManager;
         }
+
         public override void UpdateContentsAndGui(int templateIndex)
         {
             base.UpdateContentsAndGui(templateIndex);
@@ -196,61 +197,99 @@ namespace WildBlueIndustries
                 moduleInfo.Append("Crew Capacity: " + nodeTemplate.GetValue("CrewCapacity") + "\r\n");
 
             //Add just the converters
-            ConfigNode[] moduleNodes = nodeTemplate.nodes.GetNodes("MODULE");
-            foreach (ConfigNode moduleNode in moduleNodes)
+            if (nodeTemplate.nodes.Contains("MODULE"))
             {
-                if (moduleNode.GetValue("name") == "ModuleResourceConverter")
+                ConfigNode[] moduleNodes = nodeTemplate.nodes.GetNodes("MODULE");
+                foreach (ConfigNode moduleNode in moduleNodes)
                 {
-                    if (addConverterHeader)
+                    if (moduleNode.GetValue("name") == "ModuleResourceConverter")
                     {
-                        converterInfo.Append("\r\n<b>Conversions</b>\r\n\r\n");
-                        addConverterHeader = false;
+                        if (addConverterHeader)
+                        {
+                            converterInfo.Append("\r\n<b>Conversions</b>\r\n\r\n");
+                            addConverterHeader = false;
+                        }
+
+                        partModule = this.part.AddModule("ModuleResourceConverter");
+                        if (partModule != null)
+                        {
+                            partModule.Load(moduleNode);
+                            converterInfo.Append(partModule.GetInfo());
+                            converterInfo.Append("\r\n");
+                            this.part.RemoveModule(partModule);
+                        }
                     }
 
-                    partModule = this.part.AddModule("ModuleResourceConverter");
-                    partModule.Load(moduleNode);
-                    converterInfo.Append(partModule.GetInfo());
-                    converterInfo.Append("\r\n");
-                    this.part.RemoveModule(partModule);
+                    else
+                    {
+                        partModule = this.part.AddModule(moduleNode.GetValue("name"));
+                        if (partModule != null)
+                        {
+                            partModule.Load(moduleNode);
+                            moduleInfo.Append(partModule.GetInfo());
+                            moduleInfo.Append("\r\n");
+                            this.part.RemoveModule(partModule);
+                        }
+                    }
                 }
 
-                else
-                {
-                    partModule = this.part.AddModule(moduleNode.GetValue("name"));
-                    partModule.Load(moduleNode);
-                    moduleInfo.Append(partModule.GetInfo());
-                    moduleInfo.Append("\r\n");
-                    this.part.RemoveModule(partModule);
-                }
+                if (converterInfo.Length > 0)
+                    moduleInfo.Append(converterInfo.ToString());
             }
 
-            moduleInfo.Append(converterInfo.ToString());
-
             //Resources
-            ConfigNode[] resources = nodeTemplate.GetNodes("RESOURCE");
-            if (resources.Length > 0)
+            if (nodeTemplate.nodes.Contains("RESOURCE"))
             {
-                if (isInflatable)
-                    moduleInfo.Append("\r\n<b>Resources (deployed)</b>\r\n\r\n");
-                else
-                    moduleInfo.Append("\r\n<b>Resources</b>\r\n\r\n");
-
-                foreach (ConfigNode resourceNode in resources)
+                ConfigNode[] resources = nodeTemplate.GetNodes("RESOURCE");
+                if (resources.Length > 0)
                 {
-                    maxAmount = double.Parse(resourceNode.GetValue("maxAmount")) * capacityFactor;
+                    if (isInflatable)
+                        moduleInfo.Append("\r\n<b>Resources (deployed)</b>\r\n\r\n");
+                    else
+                        moduleInfo.Append("\r\n<b>Resources</b>\r\n\r\n");
 
-                    moduleInfo.Append(string.Format("{0:s}: {1:f2}\r\n", resourceNode.GetValue("name"), maxAmount));
+                    foreach (ConfigNode resourceNode in resources)
+                    {
+                        maxAmount = double.Parse(resourceNode.GetValue("maxAmount")) * capacityFactor;
+
+                        moduleInfo.Append(string.Format("{0:s}: {1:f2}\r\n", resourceNode.GetValue("name"), maxAmount));
+                    }
                 }
             }
 
             return moduleInfo.ToString();
         }
 
-        public void OnGUI()
+        public virtual void OnGUI()
         {
             if (storageView.IsVisible())
                 storageView.DrawWindow();
         }
 
+        #region IOpsView
+        public virtual void SetContextGUIVisible(bool isVisible)
+        {
+            SetGUIVisible(isVisible);
+            Events["ReconfigureStorage"].guiActive = true;
+            Events["ReconfigureStorage"].guiActiveUnfocused = true;
+            Events["ReconfigureStorage"].guiActiveEditor = true;
+        }
+
+        public virtual void SetParentView(IParentView parentView)
+        {
+        }
+
+        public virtual List<string> GetButtonLabels()
+        {
+            List<string> buttonLabels = new List<string>();
+            buttonLabels.Add("Config");
+            return buttonLabels;
+        }
+
+        public virtual void DrawOpsWindow(string buttonLabel)
+        {
+            storageView.DrawView();
+        }
+        #endregion
     }
 }

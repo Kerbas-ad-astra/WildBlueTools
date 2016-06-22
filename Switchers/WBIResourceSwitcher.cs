@@ -72,7 +72,7 @@ namespace WildBlueIndustries
 
         //Name of the transform(s) for the colony decal.
         //These names come from the model itself.
-        private string _logoPanelTransforms;
+        protected string logoPanelTransforms;
 
         //List of resources that we must keep when performing a template switch.
         //If set to NONE, then all of the part's resources will be cleared.
@@ -754,7 +754,7 @@ namespace WildBlueIndustries
             //Init the module GUI
             initModuleGUI();
 
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
             {
                 Events["ToggleDecals"].guiActive = false;
                 Events["ToggleDecals"].guiActiveEditor = false;
@@ -996,11 +996,11 @@ namespace WildBlueIndustries
 
         public void ShowDecals(bool isVisible)
         {
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
                 return;
 
             char[] delimiters = { ',' };
-            string[] transformNames = _logoPanelTransforms.Replace(" ", "").Split(delimiters);
+            string[] transformNames = logoPanelTransforms.Replace(" ", "").Split(delimiters);
             Transform[] targets;
 
             //Sanity checks
@@ -1035,14 +1035,14 @@ namespace WildBlueIndustries
         {
             Log("changeDecals called.");
 
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
             {
                 Log("changeDecals has no named transforms to change.");
                 return;
             }
 
             char[] delimiters = { ',' };
-            string[] transformNames = _logoPanelTransforms.Replace(" ", "").Split(delimiters);
+            string[] transformNames = logoPanelTransforms.Replace(" ", "").Split(delimiters);
             Transform[] targets;
             Texture textureForDecal;
             Renderer rendererMaterial;
@@ -1133,8 +1133,8 @@ namespace WildBlueIndustries
             }
 
             //Get the list of transforms for the logo panels.
-            if (_logoPanelTransforms == null)
-                _logoPanelTransforms = protoNode.GetValue("logoPanelTransform");
+            if (logoPanelTransforms == null)
+                logoPanelTransforms = protoNode.GetValue("logoPanelTransform");
         }
 
         protected virtual void hideEditorGUI(PartModule.StartState state)
@@ -1167,7 +1167,7 @@ namespace WildBlueIndustries
             Fields["shortName"].guiActive = isVisible;
             Fields["shortName"].guiActiveEditor = isVisible;            
 
-            if (string.IsNullOrEmpty(_logoPanelTransforms))
+            if (string.IsNullOrEmpty(logoPanelTransforms))
             {
                 Events["ToggleDecals"].guiActive = false;
                 Events["ToggleDecals"].guiActiveEditor = false;

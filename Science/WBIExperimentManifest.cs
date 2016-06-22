@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace WildBlueIndustries
 {
     [KSPModule("Experiment Manifest")]
-    public class WBIExperimentManifest : ExtendedPartModule, IPartMassModifier, IPartCostModifier
+    public class WBIExperimentManifest : ExtendedPartModule, IPartMassModifier, IPartCostModifier, IOpsView
     {
         [KSPField]
         public string defaultExperiment = "WBIEmptyExperiment";
@@ -123,6 +123,38 @@ namespace WildBlueIndustries
         {
         }
 
+        #region IOpsView
+        public void SetParentView(IParentView parentView)
+        {
+        }
+
+        public void DrawOpsWindow(string buttonLabel)
+        {
+            //If we're in the editor or the manifest has no experiment slots then hook em up!
+            if (HighLogic.LoadedSceneIsEditor || manifestAdmin.experimentSlots == null)
+            {
+                GetExperimentSlots();
+                manifestAdmin.experimentSlots = this.experimentSlots;
+            }
+
+            //Let the manifest admin draw the GUI.
+            manifestAdmin.DrawGUIControls();
+        }
+
+        public List<string> GetButtonLabels()
+        {
+            List<string> buttonLabels = new List<string>();
+            buttonLabels.Add("Experiments");
+            return buttonLabels;
+        }
+
+        public void SetContextGUIVisible(bool isVisible)
+        {
+            Events["ShowManifestGUI"].guiActive = isVisible;
+            Events["ShowManifestGUI"].guiActiveEditor = isVisible;
+        }
+
+        #endregion
         #region IPartCostModifier
 
         public float GetModuleCost(float defaultCost, ModifierStagingSituation sit)

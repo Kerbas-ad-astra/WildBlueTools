@@ -178,28 +178,6 @@ namespace WildBlueIndustries
             }
         }
 
-        protected void loadModuleSettings(PartModule module, int index)
-        {
-            Log("loadModuleSettings called");
-            if (index > moduleSettings.Count - 1)
-            {
-                Log("Index > moduleSettings.Count!");
-                return;
-            }
-            ConfigNode nodeSettings = moduleSettings[index];
-
-            //nodeSettings may have persistent fields. If so, then set them.
-            foreach (ConfigNode.Value nodeValue in nodeSettings.values)
-            {
-                if (nodeValue.name != "name")
-                {
-                    if (module.Fields[nodeValue.name] != null)
-                        module.Fields[nodeValue.name].Read(nodeValue.value, module);
-                    Log("Set " + nodeValue.name + " to " + nodeValue.value);
-                }
-            }
-        }
-
         protected bool canLoadModule(ConfigNode node)
         {
             string value;
@@ -325,6 +303,9 @@ namespace WildBlueIndustries
                     continue;
                 }
             }//foreach
+
+            //Clear the module settings after loading all the part modules
+            moduleSettings.Clear();
         }
         #endregion
     }

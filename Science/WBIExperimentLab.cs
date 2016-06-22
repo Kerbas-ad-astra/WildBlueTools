@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace WildBlueIndustries
 {
     [KSPModule("Experiment Lab")]
-    public class WBIExperimentLab : WBIBasicScienceLab, ITemplateOps, IPartMassModifier, IPartCostModifier
+    public class WBIExperimentLab : WBIBasicScienceLab, IOpsView, IPartMassModifier, IPartCostModifier
     {
         [KSPField]
         public string defaultExperiment = "WBIEmptyExperiment";
@@ -197,8 +197,12 @@ namespace WildBlueIndustries
             //Setup the IVA props
         }
 
-        #region ITemplateOps
-        public void DrawOpsWindow()
+        #region IOpsView
+        public void SetParentView(IParentView parentView)
+        {
+        }
+
+        public void DrawOpsWindow(string buttonLabel)
         {
             //If we're in the editor or the manifest has no experiment slots then hook em up!
             if (HighLogic.LoadedSceneIsEditor || manifestAdmin.experimentSlots == null)
@@ -210,6 +214,19 @@ namespace WildBlueIndustries
             //Let the manifest admin draw the GUI.
             manifestAdmin.DrawGUIControls();
         }
+
+        public List<string> GetButtonLabels()
+        {
+            List<string> buttonLabels = new List<string>();
+            buttonLabels.Add("Experiment Lab");
+            return buttonLabels;
+        }
+
+        public void SetContextGUIVisible(bool isVisible)
+        {
+            SetGuiVisible(isVisible);
+        }
+
         #endregion
 
         #region IPartCostModifier

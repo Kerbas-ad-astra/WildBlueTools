@@ -30,7 +30,7 @@ namespace WildBlueIndustries
         public string templateName;
         public int templateCount;
         public string requiredSkill = string.Empty;
-        public ConfigNode[] templates;
+        public TemplateManager templateManager;
 
         public PreviewTemplate previewTemplate;
         public SetTemplate setTemplate;
@@ -54,6 +54,11 @@ namespace WildBlueIndustries
 
         protected override void DrawWindowContents(int windowId)
         {
+            DrawView();
+        }
+
+        public void DrawView()
+        {
             string buttonLabel;
             string panelName;
             Texture buttonDecal;
@@ -76,7 +81,7 @@ namespace WildBlueIndustries
 
             //Templates
             _scrollPosTemplates = GUILayout.BeginScrollView(_scrollPosTemplates);
-            foreach (ConfigNode nodeTemplate in this.templates)
+            foreach (ConfigNode nodeTemplate in this.templateManager.templateNodes)
             {
                 //Button label
                 if (nodeTemplate.HasValue("title"))
@@ -99,17 +104,28 @@ namespace WildBlueIndustries
                 {
                     previewTemplate(nodeTemplate.GetValue("shortName"));
                 }
-                GUILayout.Label("<color=white>" + buttonLabel + "</color>");
+                if (TemplateManager.TemplateTechResearched(nodeTemplate))
+                    GUILayout.Label("<color=white>" + buttonLabel + "</color>");
+                else
+                    GUILayout.Label("<color=#959595>" + buttonLabel + "\r\nNeeds " + TemplateManager.GetTechTreeTitle(nodeTemplate) + "</color>");
                 GUILayout.EndHorizontal();
             }
             GUILayout.EndScrollView();
 
             if (GUILayout.Button("Reconfigure") && setTemplate != null)
             {
+                ConfigNode node = templateManager[templateName];
                 if (confirmReconfigure || HighLogic.LoadedSceneIsEditor)
                 {
-                    setTemplate(templateName);
-                    confirmReconfigure = false;
+                    if (TemplateManager.TemplateTechResearched(node))
+                    {
+                        setTemplate(templateName);
+                        confirmReconfigure = false;
+                    }
+                    else
+                    {
+                        ScreenMessages.PostScreenMessage("Unable to use " + templateName + ". Research " + TemplateManager.GetTechTreeTitle(node) + " first.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    }
                 }
 
                 else
@@ -121,7 +137,7 @@ namespace WildBlueIndustries
 
             GUILayout.EndVertical();
 
-            _scrollPos = GUILayout.BeginScrollView(_scrollPos, new GUILayoutOption[] {GUILayout.Width(350)});
+            _scrollPos = GUILayout.BeginScrollView(_scrollPos, new GUILayoutOption[] { GUILayout.Width(350) });
 
             if (decal != null)
             {
