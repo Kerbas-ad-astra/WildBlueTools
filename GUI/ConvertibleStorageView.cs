@@ -20,6 +20,7 @@ namespace WildBlueIndustries
 {
     public delegate void PreviewTemplate(string templateName);
     public delegate void SetTemplate(string template);
+    public delegate void SetupView();
 
     public class ConvertibleStorageView : Window<ConvertibleStorageView>
     {
@@ -28,12 +29,13 @@ namespace WildBlueIndustries
         public string requiredResource = string.Empty;
         public float resourceCost = 100f;
         public string templateName;
-        public int templateCount;
+        public int templateCount = -1;
         public string requiredSkill = string.Empty;
         public TemplateManager templateManager;
 
         public PreviewTemplate previewTemplate;
         public SetTemplate setTemplate;
+        public SetupView setupView;
 
         private Vector2 _scrollPos;
         private Vector2 _scrollPosTemplates;
@@ -59,13 +61,15 @@ namespace WildBlueIndustries
 
         public void DrawView()
         {
+            if (templateCount == -1 && setupView != null)
+                setupView();
             string buttonLabel;
             string panelName;
             Texture buttonDecal;
 
             GUILayout.BeginHorizontal();
 
-            GUILayout.BeginVertical();
+            GUILayout.BeginVertical(new GUILayoutOption[] { GUILayout.Width(250) });
 
             GUILayout.Label("<color=white>Configuration: " + templateName + "</color>");
 
@@ -137,7 +141,8 @@ namespace WildBlueIndustries
 
             GUILayout.EndVertical();
 
-            _scrollPos = GUILayout.BeginScrollView(_scrollPos, new GUILayoutOption[] { GUILayout.Width(350) });
+            GUILayout.BeginVertical(new GUILayoutOption[] { GUILayout.Width(390) });
+            _scrollPos = GUILayout.BeginScrollView(_scrollPos);
 
             if (decal != null)
             {
@@ -151,6 +156,7 @@ namespace WildBlueIndustries
             GUILayout.Label(info);
 
             GUILayout.EndScrollView();
+            GUILayout.EndVertical();
 
             GUILayout.EndHorizontal();
         }

@@ -60,6 +60,7 @@ namespace WildBlueIndustries
 
             storageView.previewTemplate = PreviewTemplate;
             storageView.setTemplate = SwitchTemplateType;
+            storageView.setupView = SetupView;
             storageView.templateManager = this.templateManager;
         }
 
@@ -78,6 +79,11 @@ namespace WildBlueIndustries
             Events["PrevType"].guiActive = false;
             Events["PrevType"].guiActiveUnfocused = false;
             Events["PrevType"].guiActiveEditor = false;
+        }
+
+        public void SetupView()
+        {
+            setupStorageView(CurrentTemplateIndex);
         }
 
         public void PreviewTemplate(string templateName)
@@ -267,6 +273,11 @@ namespace WildBlueIndustries
         }
 
         #region IOpsView
+        public string GetPartTitle()
+        {
+            return this.part.partInfo.title;
+        }
+
         public virtual void SetContextGUIVisible(bool isVisible)
         {
             SetGUIVisible(isVisible);

@@ -29,6 +29,7 @@ namespace WildBlueIndustries
         void DrawOpsWindow(string buttonLabel);
         void SetParentView(IParentView parentView);
         void SetContextGUIVisible(bool isVisible);
+        string GetPartTitle();
     }
 
     public class WBIOpsManager : WBIConvertibleStorage
@@ -85,5 +86,27 @@ namespace WildBlueIndustries
             opsManagerView.UpdateButtonTabs();
         }
 
+        #region IOpsView
+        public override List<string> GetButtonLabels()
+        {
+            List<string> buttonLabels = new List<string>();
+
+            //Get our part modules
+            opsManagerView.UpdateConverters();
+            opsManagerView.GetPartModules();
+
+            buttonLabels.Add("Config");
+            buttonLabels.Add("Command");
+            buttonLabels.Add("Resources");
+            buttonLabels.Add("Converters");
+
+            return buttonLabels;
+        }
+
+        public override void DrawOpsWindow(string buttonLabel)
+        {
+            opsManagerView.DrawOpsWindow(buttonLabel);
+        }
+        #endregion
     }
 }
