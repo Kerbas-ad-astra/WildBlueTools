@@ -22,6 +22,8 @@ namespace WildBlueIndustries
     {
         public string buttonLabel;
         public IOpsView view;
+        public Vessel vessel;
+        public string partTitle;
     }
 
     public class OpsManagerView : Window<OpsManagerView>, IOpsView, IParentView
@@ -42,9 +44,13 @@ namespace WildBlueIndustries
         base("Manage Operations", 800, 480)
         {
             Resizable = false;
-        }
+        }        
 
         #region IParentView
+        public void ConfigChanged(IOpsView opsView)
+        {
+        }
+
         public void SetParentVisible(bool isVisible)
         {
             SetVisible(isVisible);
@@ -79,67 +85,44 @@ namespace WildBlueIndustries
 
         public void UpdateButtonTabs()
         {
+            SDrawbleView drawableView;
+
             //Get our part modules
             UpdateConverters();
-            getPartModules();
+            GetPartModules();
 
             views.Clear();
-
-            //Built-in views: Config
-            SDrawbleView drawableView = new SDrawbleView();
-            drawableView.buttonLabel = "Config";
-            drawableView.view = this;
-            views.Add(drawableView);
-
-            //Command
-            if (hasDecals || commandModule != null || lightModule != null)
-            {
-                drawableView = new SDrawbleView();
-                drawableView.buttonLabel = "Command";
-                drawableView.view = this;
-                views.Add(drawableView);
-            }
-
-            //Resources
-            drawableView = new SDrawbleView();
-            drawableView.buttonLabel = "Resources";
-            drawableView.view = this;
-            views.Add(drawableView);
-
-            //Converters
-            drawableView = new SDrawbleView();
-            drawableView.buttonLabel = "Converters";
-            drawableView.view = this;
-            views.Add(drawableView);
 
             //Custom views from other PartModules
             List<IOpsView> templateOpsViews = this.part.FindModulesImplementing<IOpsView>();
             foreach (IOpsView templateOps in templateOpsViews)
             {
-                if (templateOps != (IOpsView)this)
+                List<string> labels = templateOps.GetButtonLabels();
+                foreach (string label in labels)
                 {
-                    List<string> labels = templateOps.GetButtonLabels();
-                    foreach (string label in labels)
-                    {
-                        drawableView = new SDrawbleView();
-                        drawableView.buttonLabel = label;
-                        drawableView.view = templateOps;
-                        templateOps.SetParentView(this);
-                        templateOps.SetContextGUIVisible(false);
-                        views.Add(drawableView);
-                    }
+                    drawableView = new SDrawbleView();
+                    drawableView.buttonLabel = label;
+                    drawableView.view = templateOps;
+                    templateOps.SetParentView(this);
+                    templateOps.SetContextGUIVisible(false);
+                    views.Add(drawableView);
                 }
             }
         }
 
         #region IOpsView
+        public string GetPartTitle()
+        {
+            return this.part.partInfo.title;
+        }
+
         public void SetParentView(IParentView parentView)
         {
         }
 
         public void DrawOpsWindow(string buttonLabel)
         {
-            switch (currentDrawableView.buttonLabel)
+            switch (buttonLabel)
             {
                 case "Config":
                     storageView.DrawView();
@@ -158,7 +141,10 @@ namespace WildBlueIndustries
                     break;
 
                 default:
-                    currentDrawableView.view.DrawOpsWindow(buttonLabel);
+                    if (currentDrawableView.vessel != null)
+                        currentDrawableView.view.DrawOpsWindow(buttonLabel);
+                    else
+                        Debug.Log("No current view to show!");
                     break;
             }
         }
@@ -169,7 +155,7 @@ namespace WildBlueIndustries
 
             //Get our part modules
             UpdateConverters();
-            getPartModules();
+            GetPartModules();
 
             buttonLabels.Add("Config");
             buttonLabels.Add("Command");
@@ -195,6 +181,7 @@ namespace WildBlueIndustries
             {
                 if (GUILayout.Button(drawableView.buttonLabel))
                 {
+                    _scrollPosViews = new Vector2();
                     currentDrawableView = drawableView;
                 }
             }
@@ -206,7 +193,7 @@ namespace WildBlueIndustries
             GUILayout.EndHorizontal();
         }
 
-        public void getPartModules()
+        public void GetPartModules()
         {
             commandModule = this.part.FindModuleImplementing<ModuleCommand>();
             if (commandModule != null)
@@ -234,11 +221,12 @@ namespace WildBlueIndustries
         protected void drawCommandView()
         {
             GUILayout.BeginVertical();
-            GUILayout.Label("Command & Control");
 
+            GUILayout.BeginScrollView(new Vector2(), new GUIStyle(GUI.skin.textArea), new GUILayoutOption[] { GUILayout.Height(480) });
             if (!HighLogic.LoadedSceneIsFlight)
             {
                 GUILayout.Label("This configuration is working, but the contents can only be accessed in flight.");
+                GUILayout.EndScrollView();
                 GUILayout.EndVertical();
                 return;
             }
@@ -275,22 +263,23 @@ namespace WildBlueIndustries
                     lightModule.ToggleAnimation();
             }
 
+            GUILayout.EndScrollView();
             GUILayout.EndVertical();
         }
 
         protected void drawResourceView()
         {
             GUILayout.BeginVertical();
-            GUILayout.Label("Resources");
 
             if (this.part.Resources.Count == 0)
             {
                 GUILayout.Label("<color=yellow>This configuration does not have any resources in it.</color>");
+                GUILayout.EndScrollView();
                 GUILayout.EndVertical();
                 return;
             }
 
-            _scrollPosResources = GUILayout.BeginScrollView(_scrollPosResources, new GUIStyle(GUI.skin.textArea));
+            _scrollPosResources = GUILayout.BeginScrollView(_scrollPosResources, new GUIStyle(GUI.skin.textArea), new GUILayoutOption[] { GUILayout.Height(480) });
             foreach (PartResource resource in this.part.Resources)
             {
                 if (resource.isVisible)
@@ -310,16 +299,14 @@ namespace WildBlueIndustries
             string converterStatus = "??";
             bool isActivated;
 
-            GUILayout.Label("Converters");
-
+            _scrollPosConverters = GUILayout.BeginScrollView(_scrollPosConverters, new GUIStyle(GUI.skin.textArea), new GUILayoutOption[] { GUILayout.Height(480) });
             if (converters.Count == 0)
             {
                 GUILayout.Label("<color=yellow>This configuration does not have any resource converters in it.</color>");
+                GUILayout.EndScrollView();
                 GUILayout.EndVertical();
                 return;
             }
-
-            _scrollPosConverters = GUILayout.BeginScrollView(_scrollPosConverters, new GUIStyle(GUI.skin.textArea));
 
             foreach (ModuleResourceConverter converter in converters)
             {

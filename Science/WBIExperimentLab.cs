@@ -198,6 +198,11 @@ namespace WildBlueIndustries
         }
 
         #region IOpsView
+        public string GetPartTitle()
+        {
+            return this.part.partInfo.title;
+        }
+
         public void SetParentView(IParentView parentView)
         {
         }

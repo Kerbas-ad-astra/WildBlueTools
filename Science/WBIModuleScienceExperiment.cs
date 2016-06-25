@@ -124,6 +124,11 @@ namespace WildBlueIndustries
         {
             StringBuilder info = new StringBuilder();
 
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                return "";
+            }
+            
             info.Append(title + "\r\n\r\n");
             info.Append(description + "\r\n\r\n");
             info.Append("<b>Requirements</b>\r\n\r\n");
